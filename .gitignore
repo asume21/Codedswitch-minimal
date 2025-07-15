@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+backend/__pycache__/
+backend/.venv/
+backend/venv/
+
+# Build outputs
+frontend/dist/
+frontend/build/
+
+# Environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Music generation cache
+*.wav
+*.mp3
+temp/
+cache/
+
+# Python specific
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+
+# Examples (reduce upload size)
+frontend/musicgen_examples/
+frontend/multilang_examples/

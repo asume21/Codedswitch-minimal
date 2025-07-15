@@ -1,0 +1,28 @@
+# Use a slim Python image
+# syntax=docker/dockerfile:1.4
+FROM python:3.10-slim
+
+WORKDIR /app
+
+
+
+# Copy only backend code and requirements
+COPY backend/requirements.txt requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+COPY backend/ .
+
+# Install Python dependencies
+
+# Expose the port
+ENV PORT=10000
+EXPOSE 10000
+
+# Set environment variables (add more as needed)
+ENV PYTHONPATH=/app
+
+# Healthcheck endpoint for Render
+HEALTHCHECK CMD curl --fail http://localhost:10000/api/health || exit 1
+
+# Start the backend with Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:10000", "web_backend:app"]
