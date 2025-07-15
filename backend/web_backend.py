@@ -17,6 +17,7 @@ except ImportError as e:
 app = Flask(__name__)
 CORS(app, origins=[
     "https://www.codedswitch.com",
+    "https://codedswitch.com", 
     "https://codedswitch-frontend.onrender.com",
     "http://localhost:5173",
     "http://localhost:3000"
