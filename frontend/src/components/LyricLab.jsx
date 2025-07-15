@@ -276,6 +276,11 @@ CodedSwitch, that's the coding rap`
             <select 
               value={selectedStyle} 
               onChange={(e) => setSelectedStyle(e.target.value)}
+              className="style-select"
+              id="rap-style-selector"
+              name="rapStyle"
+              aria-label="Select rap style"
+              title="Choose rap style for lyric generation"
             >
               {rapStyles.map(style => (
                 <option key={style.id} value={style.id}>

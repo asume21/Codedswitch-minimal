@@ -58,7 +58,14 @@ const BeatStudio = () => {
       <div className="beat-controls">
         <label>
           Style:
-          <select value={style} onChange={(e) => setStyle(e.target.value)}>
+          <select 
+            value={style} 
+            onChange={(e) => setStyle(e.target.value)}
+            id="beat-style-selector"
+            name="beatStyle"
+            aria-label="Select beat style"
+            title="Choose a beat style"
+          >
             <option>Hip-Hop</option>
             <option>Trap</option>
             <option>Lo-Fi</option>

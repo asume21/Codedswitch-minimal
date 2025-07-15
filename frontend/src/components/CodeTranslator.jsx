@@ -185,6 +185,11 @@ for i in range(10):
           <select 
             value={sourceLanguage} 
             onChange={(e) => setSourceLanguage(e.target.value)}
+            className="language-select"
+            id="from-language-selector"
+            name="fromLanguage"
+            aria-label="Select source programming language"
+            title="Choose source language"
           >
             {supportedLanguages.map(lang => (
               <option key={lang.id} value={lang.id}>
@@ -203,6 +208,11 @@ for i in range(10):
           <select 
             value={targetLanguage} 
             onChange={(e) => setTargetLanguage(e.target.value)}
+            className="language-select"
+            id="to-language-selector"
+            name="toLanguage"
+            aria-label="Select target programming language"
+            title="Choose target language"
           >
             {supportedLanguages.map(lang => (
               <option key={lang.id} value={lang.id}>

@@ -21,7 +21,18 @@ CORS(app, origins=[
     "https://newnewwebsite.onrender.com",
     "http://localhost:5173",
     "http://localhost:3000"
-])
+], supports_credentials=True)
+
+# Add security headers
+@app.after_request
+def after_request(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 @app.route('/')
