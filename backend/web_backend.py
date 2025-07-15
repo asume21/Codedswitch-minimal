@@ -2,7 +2,16 @@ import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
-from musicgen_backend import generate_instrumental
+
+# Optional music generation import
+try:
+    from musicgen_backend import generate_instrumental
+    MUSIC_GENERATION_AVAILABLE = True
+except ImportError as e:
+    print(f"Music generation not available: {e}")
+    MUSIC_GENERATION_AVAILABLE = False
+    def generate_instrumental(*args, **kwargs):
+        return {"error": "Music generation not available - missing dependencies"}
 
 
 app = Flask(__name__)
