@@ -1,0 +1,24 @@
+.assistant-page {
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.assistant-title {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.assistant-description {
+  font-size: 1.2rem;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  color: #eee;
+}
+
+.assistant-placeholder {
+  padding: 3rem;
+  background: rgba(255,255,255,0.05);
+  border: 2px dashed rgba(255,255,255,0.2);
+  border-radius: 12px;
+  color: #aaa;
+}

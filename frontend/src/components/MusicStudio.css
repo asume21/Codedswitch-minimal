@@ -1,0 +1,86 @@
+.studio-page {
+  padding: 4rem 2rem;
+  text-align: center;
+}
+
+.studio-title {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.studio-description {
+  font-size: 1.2rem;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  color: #eee;
+}
+
+.studio-toolbar {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.add-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+.timeline-wrapper {
+  overflow-x: auto;
+  padding-bottom: 1rem;
+}
+
+.timeline {
+  position: relative;
+  min-height: 300px;
+}
+
+.track-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.track-label {
+  width: 100px;
+  text-align: right;
+  padding-right: 1rem;
+  color: #ddd;
+  font-weight: 600;
+}
+
+.track-content {
+  position: relative;
+  flex: 1;
+  height: 60px;
+  background: rgba(255,255,255,0.05);
+  border: 1px dashed rgba(255,255,255,0.15);
+  border-radius: 8px;
+}
+
+.clip {
+  position: absolute;
+  top: 8px;
+  height: 44px;
+  border-radius: 6px;
+  cursor: grab;
+  transition: box-shadow 0.2s;
+}
+
+.clip.dragging {
+  opacity: 0.8;
+  cursor: grabbing;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}

@@ -1,0 +1,35 @@
+.logo-animation {
+  display: inline-block;
+  color: #ffab91; /* accent colour */
+  mix-blend-mode: screen; /* blend with bg */
+  opacity: 0.85;
+}
+
+.draw-path {
+  stroke-dasharray: 120;
+  stroke-dashoffset: 120;
+  animation: draw 3s linear forwards, erase 3s linear 4.5s forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes erase {
+  to {
+    stroke-dashoffset: 120;
+  }
+}
+
+/* Infinite loop */
+.logo-animation svg {
+  animation: loop 7.5s linear infinite;
+}
+
+@keyframes loop {
+  to {
+    transform: rotate(0deg);
+  }
+}
