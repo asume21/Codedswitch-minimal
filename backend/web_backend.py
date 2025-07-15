@@ -73,7 +73,7 @@ def ai_proxy():
         return jsonify({'error': 'Grok_API_Key environment variable not set'}), 500
     try:
         response = requests.post(
-            "https://api.grok.com/v1/chat/completions",  # Replace with the actual Grok API endpoint if different
+            "https://api.x.ai/v1/chat/completions",  # Correct xAI Grok API endpoint
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {grok_api_key}"
@@ -152,7 +152,7 @@ def vulnerability_scan():
     
     try:
         response = requests.post(
-            "https://api.grok.com/v1/chat/completions",
+            "https://api.x.ai/v1/chat/completions",
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {grok_api_key}"
