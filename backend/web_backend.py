@@ -150,6 +150,67 @@ def serve_music_file():
     return send_file(wav_path, mimetype='audio/wav', as_attachment=True, download_name='musicgen_output.wav')
 
 
+@app.route('/api/translate-code', methods=['POST', 'OPTIONS'])
+def translate_code():
+    """Translate code from one language to another using Grok API."""
+    data = request.json or {}
+    source_code = data.get('sourceCode')
+    source_language = data.get('sourceLanguage')
+    target_language = data.get('targetLanguage')
+    
+    if not source_code:
+        return jsonify({'error': 'Missing sourceCode'}), 400
+    if not source_language:
+        return jsonify({'error': 'Missing sourceLanguage'}), 400
+    if not target_language:
+        return jsonify({'error': 'Missing targetLanguage'}), 400
+    
+    grok_api_key = os.environ.get('Grok_API_Key')
+    if not grok_api_key:
+        return jsonify({'error': 'Grok_API_Key environment variable not set'}), 500
+    
+    try:
+        prompt = f"Translate the following {source_language} code to {target_language}. Only return the translated code without explanations:\n\n```{source_language}\n{source_code}\n```"
+        
+        response = requests.post(
+            "https://api.x.ai/v1/chat/completions",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {grok_api_key}"
+            },
+            json={
+                "model": "grok-beta",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": data.get('max_tokens', 1000)
+            },
+            timeout=60
+        )
+        response.raise_for_status()
+        result = response.json()
+        translated_code = result['choices'][0]['message']['content']
+        
+        # Clean up the response to extract just the code
+        if '```' in translated_code:
+            # Extract code from markdown code blocks
+            lines = translated_code.split('\n')
+            code_lines = []
+            in_code_block = False
+            for line in lines:
+                if line.strip().startswith('```'):
+                    in_code_block = not in_code_block
+                    continue
+                if in_code_block:
+                    code_lines.append(line)
+            translated_code = '\n'.join(code_lines)
+        
+        return jsonify({
+            'translatedCode': translated_code.strip(),
+            'sourceLanguage': source_language,
+            'targetLanguage': target_language
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/vulnerability-scan', methods=['POST'])
 def vulnerability_scan():
     """Scan code for security vulnerabilities via Grok API."""
