@@ -80,7 +80,7 @@ def ai_proxy():
                 "Authorization": f"Bearer {grok_api_key}"
             },
             json={
-                "model": "grok-1",  # Replace with the correct Grok model name if needed
+                "model": "grok-beta",  # Correct xAI Grok model name
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_tokens
             },
@@ -159,7 +159,7 @@ def vulnerability_scan():
                 "Authorization": f"Bearer {grok_api_key}"
             },
             json={
-                "model": "grok-1",
+                "model": "grok-beta",
                 "messages": [{"role": "user", "content": f"Scan the following code for security vulnerabilities and list the issues:\n```{code}```"}],
                 "max_tokens": data.get('max_tokens', 500)
             },
