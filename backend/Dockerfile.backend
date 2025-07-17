@@ -28,4 +28,4 @@ ENV PYTHONPATH=/app
 HEALTHCHECK CMD curl --fail http://localhost:10000/api/health || exit 1
 
 # Start the backend with Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:10000", "web_backend:app"]
+CMD ["gunicorn", "--workers=1", "--preload", "--timeout", "120", "--bind", "0.0.0.0:10000", "web_backend:app"]
