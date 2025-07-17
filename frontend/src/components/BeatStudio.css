@@ -56,11 +56,18 @@
 .sequencer-grid {
   position: relative;
   width: 100%;
-  min-height: 150px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.2);
+  height: 200px;
+  background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.5);
   overflow-x: auto;
   margin: 0 auto;
   box-sizing: border-box;
-  padding: 0.5rem;
+  padding: 1rem;
+}
+
+.sequencer-placeholder {
+  color: #ccc;
+  font-style: italic;
+  text-align: center;
+  line-height: 180px;
 }

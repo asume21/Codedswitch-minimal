@@ -138,6 +138,10 @@ const BeatStudio = () => {
       <div className="sequencer">
         <h2 className="sequencer-title">Sequencer</h2>
         <div className="sequencer-grid">
+          {loopClips.length === 0 && (
+            <div className="sequencer-placeholder">No loops in sequencer. Add a loop to track to visualize the sequencer.</div>
+          )}
+
           {loopClips.map((clip, index) => (
             <div
   key={clip.id}
