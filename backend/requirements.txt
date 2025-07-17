@@ -1,6 +1,7 @@
 # Essential requirements for Grok API backend
 flask==3.0.3
 flask-cors==4.0.1
+flask-mail==0.9.1
 requests==2.32.3
 gunicorn==21.2.0
 numpy<2.0.0
