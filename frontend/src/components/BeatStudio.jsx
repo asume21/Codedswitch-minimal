@@ -67,12 +67,7 @@ const BeatStudio = () => {
       setGenerating(false);
     }
   }
-    setGenerating(true)
-    setTimeout(() => {
-      setGenerating(false)
-      startBeat()
-    }, 1200)
-  }
+
   return (
     <div className="studio-page">
       <h1 className="studio-title">🎧 Beat Studio</h1>
