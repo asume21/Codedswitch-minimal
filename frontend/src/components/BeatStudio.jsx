@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import './BeatStudio.css'
 import LoopBrowser from './LoopBrowser'
 import * as Tone from 'tone'
@@ -13,6 +13,16 @@ const BeatStudio = () => {
   const [loopClips, setLoopClips] = useState([])
   const PIXELS_PER_SECOND = 20
   const playersRef = useRef({})
+  const [padClips, setPadClips] = useState(Array(9).fill(null));
+  const [playheadX, setPlayheadX] = useState(0);
+  const markerIntervalRef = useRef(null);
+
+  const playPadClip = async (clip) => {
+    await Tone.start();
+    const url = `/loops/${clip.bpm}/${clip.filename}`;
+    const player = new Tone.Player(url).toDestination();
+    player.start();
+  };
   const handleGenerate = async () => {
     setGenerating(true);
     try {
@@ -61,6 +71,12 @@ const BeatStudio = () => {
     Tone.Transport.bpm.value = bpm;
     Tone.Transport.start();
     setPlaying(true);
+    // Playhead marker
+    if (markerIntervalRef.current) clearInterval(markerIntervalRef.current);
+    setPlayheadX(0);
+    markerIntervalRef.current = setInterval(() => {
+      setPlayheadX(x => x + PIXELS_PER_SECOND * 0.1);
+    }, 100);
   };
 
   const stopPlayback = () => {
@@ -69,6 +85,8 @@ const BeatStudio = () => {
     Object.values(playersRef.current).forEach(p => p.dispose());
     playersRef.current = {};
     setPlaying(false);
+    clearInterval(markerIntervalRef.current);
+    setPlayheadX(0);
   };
 
   return (
@@ -111,7 +129,14 @@ const BeatStudio = () => {
           {generating ? 'Generating…' : 'Generate Beat'}
         </button>
         <LoopBrowser onAddLoop={({ bpm: loopBpm, filename }) => {
-          setLoopClips(prev => [...prev, { id: Date.now() + Math.random(), bpm: loopBpm, filename, start: 0, length: 160 }]);
+          const newClip = { id: Date.now() + Math.random(), bpm: loopBpm, filename, start: 0, length: 160 };
+          setLoopClips(prev => [...prev, newClip]);
+          setPadClips(prevPads => {
+            const next = [...prevPads];
+            const emptyIndex = next.findIndex(p => p == null);
+            if (emptyIndex !== -1) next[emptyIndex] = newClip;
+            return next;
+          });
         }} />
 
         {!playing && (
@@ -124,6 +149,19 @@ const BeatStudio = () => {
             Stop Preview
           </button>
         )}
+      </div>
+
+      <div className="pad-grid">
+        {padClips.map((clip, idx) => (
+          <button
+            key={idx}
+            className="pad"
+            onClick={() => clip && playPadClip(clip)}
+            disabled={!clip}
+          >
+            {clip ? clip.filename : `Pad ${idx+1}`}
+          </button>
+        ))}
       </div>
 
       {playing && (
@@ -141,6 +179,7 @@ const BeatStudio = () => {
           {loopClips.length === 0 && (
             <div className="sequencer-placeholder">No loops in sequencer. Add a loop to track to visualize the sequencer.</div>
           )}
+          <div className="playhead-marker" style={{ left: playheadX }} />
 
           {loopClips.map((clip, index) => (
             <div
