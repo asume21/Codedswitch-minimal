@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import * as Tone from 'tone'
 import LoopBrowser from './LoopBrowser'
 import './MusicStudio.css'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000';
 
 // Generate a new empty track object
 const createTrack = () => ({ id: Date.now() + Math.random(), clips: [] })
@@ -23,6 +24,11 @@ const MusicStudio = () => {
   const [loopClips, setLoopClips] = useState([]) // {id, bpm, filename, start, length}
   const [dragging, setDragging] = useState(null) // {trackIdx, clipIdx, offsetX}
   const [playing, setPlaying] = useState(false)
+  const [instrument, setInstrument] = useState('Piano')
+  const [prompt, setPrompt] = useState('')
+  const [lyrics, setLyrics] = useState(localStorage.getItem('generatedLyrics') || '')
+  const [generating, setGenerating] = useState(false)
+  const [audioUrl, setAudioUrl] = useState(null)
   const timelineWidth = 1200 // px
   const PIXELS_PER_SECOND = 20 // 20px = 1s
   const synthsRef = useRef([])
@@ -162,6 +168,32 @@ const MusicStudio = () => {
     stop()
   }, [])
 
+  const handleGenerate = async () => {
+    setGenerating(true)
+    try {
+      const fullPrompt = lyrics
+        ? `${instrument} instrumental with melody inspired by lyrics: ${lyrics}`
+        : `${instrument} instrumental: ${prompt}`
+      const response = await fetch(`${BACKEND_URL}/api/generate-music`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: fullPrompt, lyrics, duration: 30 })
+      })
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(errorText || 'Failed to generate instrumental')
+      }
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      setAudioUrl(url)
+    } catch (error) {
+      console.error(error)
+      alert('Error generating instrumental: ' + error.message)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   return (
     <div className="studio-page">
       <h1 className="studio-title">🎵 Music Studio</h1>
@@ -173,6 +205,48 @@ const MusicStudio = () => {
         <button className="add-btn" onClick={addTrack}>+ Track</button>
         <button className="play-btn" onClick={play} disabled={playing}>▶ Play</button>
         <button className="stop-btn" onClick={stop} disabled={!playing}>■ Stop</button>
+      </div>
+
+      <div className="generation-controls">
+        <label>
+          Instrument:
+          <select value={instrument} onChange={e => setInstrument(e.target.value)}>
+            <option>Piano</option>
+            <option>Guitar</option>
+            <option>Synth</option>
+            <option>Drums</option>
+            <option>Bass</option>
+          </select>
+        </label>
+        <label>
+          Lyrics:
+          <textarea
+            value={lyrics}
+            onChange={e => {
+              setLyrics(e.target.value)
+              localStorage.setItem('generatedLyrics', e.target.value)
+            }}
+            placeholder="Paste lyrics from Lyric Lab"
+          />
+        </label>
+        <label>
+          Prompt:
+          <input
+            type="text"
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            placeholder="Describe instrumental details..."
+          />
+        </label>
+        <button className="generate-btn" onClick={handleGenerate} disabled={generating}>
+          {generating ? 'Generating…' : 'Generate Instrumental'}
+        </button>
+        {audioUrl && (
+          <div className="audio-player">
+            <audio controls src={audioUrl} />
+            <a href={audioUrl} download="instrumental.wav" className="download-link">Download Instrumental</a>
+          </div>
+        )}
       </div>
 
       {/* Loop Machine Section */}

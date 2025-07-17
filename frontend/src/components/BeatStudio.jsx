@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
 import './BeatStudio.css'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000';
 
 const BeatStudio = () => {
   const [bpm, setBpm] = useState(90)
   const [style, setStyle] = useState('Hip-Hop')
   const [generating, setGenerating] = useState(false)
   const [playing, setPlaying] = useState(false)
+  const [audioUrl, setAudioUrl] = useState(null)
   const audioCtxRef = useRef(null)
   const intervalRef = useRef(null)
 
@@ -41,7 +43,30 @@ const BeatStudio = () => {
 
   useEffect(() => () => stopBeat(), [])
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/generate-music`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: `${style} beat`, duration: 30 })
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to generate beat');
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      setAudioUrl(url);
+      const audio = new Audio(url);
+      audio.play();
+    } catch (error) {
+      console.error(error);
+      alert('Error generating beat: ' + error.message);
+    } finally {
+      setGenerating(false);
+    }
+  }
     setGenerating(true)
     setTimeout(() => {
       setGenerating(false)
@@ -97,6 +122,12 @@ const BeatStudio = () => {
 
       {playing && (
         <p className="preview-note">Previewing a simple metronome at {bpm} BPM ({style}). AI-generated audio will replace this.</p>
+      )}
+      {audioUrl && (
+        <div className="audio-player">
+          <audio controls src={audioUrl} />
+          <a href={audioUrl} download="beat.wav" className="download-link">Download Beat</a>
+        </div>
       )}
     </div>
   )
