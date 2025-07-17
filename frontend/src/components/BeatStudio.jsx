@@ -17,11 +17,11 @@ const BeatStudio = () => {
   const [playheadX, setPlayheadX] = useState(0);
   const markerIntervalRef = useRef(null);
 
-  const playPadClip = async (clip) => {
-    await Tone.start();
+  const playPadClip = (clip) => {
     const url = `/loops/${clip.bpm}/${clip.filename}`;
-    const player = new Tone.Player(url).toDestination();
-    player.start();
+    console.log('Playing pad clip:', url);
+    const audio = new Audio(url);
+    audio.play().catch(err => console.error('Audio playback error:', err));
   };
   const handleGenerate = async () => {
     setGenerating(true);

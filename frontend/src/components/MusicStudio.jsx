@@ -249,33 +249,7 @@ const MusicStudio = () => {
         )}
       </div>
 
-      {/* Loop Machine Section */}
-      <div style={{margin: '24px 0', padding: '16px', background: '#181818', borderRadius: '8px'}}>
-        <h2 style={{marginBottom: 8}}>Loop Machine</h2>
-        <LoopBrowser onAddLoop={({ bpm, filename }) => {
-          // Place loop at start of timeline, length = 8s (adjust as needed)
-          setLoopClips(prev => [...prev, {
-            id: Date.now() + Math.random(),
-            bpm,
-            filename,
-            start: 0,
-            length: 160, // px, adjust for loop duration
-          }])
-        }} />
-        <div className="track-row loop-track-row">
-          <div className="track-label">Loops</div>
-          <div className="track-content loop-content" style={{minHeight: 60}}>
-            {loopClips.map((clip, idx) => (
-              <div
-                key={clip.id}
-                className="clip loop-clip"
-                style={{ left: clip.start, width: clip.length, backgroundColor: '#3b82f6', opacity: 0.7 }}
-                title={`${clip.bpm}/${clip.filename}`}
-              >{clip.filename}</div>
-            ))}
-          </div>
-        </div>
-      </div>
+
 
       <div className="timeline-wrapper">
         <div className="timeline" style={{ width: timelineWidth }}>

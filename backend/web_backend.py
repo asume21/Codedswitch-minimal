@@ -2,26 +2,35 @@ import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
+from flask_mail import Mail, Message
+from models import db, EmailSignup
+from datetime import datetime
+from dotenv import load_dotenv
 
-# Optional music generation import
-try:
-    from musicgen_backend import generate_instrumental
-    MUSIC_GENERATION_AVAILABLE = True
-except ImportError as e:
-    print(f"Music generation not available: {e}")
-    MUSIC_GENERATION_AVAILABLE = False
-    def generate_instrumental(*args, **kwargs):
-        return {"error": "Music generation not available - missing dependencies"}
+# Load environment variables
+load_dotenv()
+
+# MusicGenBackend will be imported lazily in the generate_music route
 
 
 app = Flask(__name__)
-CORS(app, origins=[
-    "https://www.codedswitch.com",
-    "https://codedswitch.com", 
-    "https://newnewwebsite.onrender.com",
-    "http://localhost:5173",
-    "http://localhost:3000"
-], supports_credentials=True)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///codedswitch.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+
+mail = Mail(app)
+db.init_app(app)
+
+CORS(app, 
+    origins=["http://localhost:5173", "http://localhost:5174", "https://www.codedswitch.com", "https://codedswitch.com"],
+    supports_credentials=True,
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Access-Control-Allow-Origin"],
+    methods=["GET", "POST", "OPTIONS"])
 
 # Add security headers
 @app.after_request
@@ -123,6 +132,11 @@ from flask import send_file  # type: ignore[reportMissingImports]
 @app.route('/api/generate-music', methods=['POST'])
 def generate_music():
     """Generate instrumental music using MusicGen and return the WAV file directly."""
+    try:
+        from musicgen_backend import generate_instrumental
+    except ImportError as e:
+        return jsonify({"error": f"Music generation not available: {e}"}), 500
+
     data = request.json or {}
     prompt = data.get('prompt', '')
     lyrics = data.get('lyrics', '')
@@ -244,5 +258,55 @@ def vulnerability_scan():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/signup', methods=['POST'])
+def signup():
+    data = request.json
+    email = data.get('email')
+    
+    if not email or '@' not in email:
+        return jsonify({'error': 'Invalid email address'}), 400
+    
+    try:
+        # Check if email already exists
+        existing = EmailSignup.query.filter_by(email=email).first()
+        if existing:
+            return jsonify({'message': 'Email already signed up'}), 200
+        
+        # Create new signup
+        signup = EmailSignup(email=email)
+        db.session.add(signup)
+        db.session.commit()
+        
+        # Send notification email
+        msg = Message(
+            'New CodedSwitch Signup',
+            recipients=[os.environ.get('ADMIN_EMAIL', 'admin@example.com')]
+        )
+        msg.body = f"New signup: {email}\nDate: {datetime.utcnow()}"
+        mail.send(msg)
+        
+        return jsonify({
+            'message': 'Thank you for signing up!',
+            'email': email
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/test-emails', methods=['GET'])
+def test_emails():
+    """Endpoint to test email storage (for development only)"""
+    emails = EmailSignup.query.all()
+    return jsonify({
+        'emails': [{
+            'id': email.id,
+            'email': email.email,
+            'created_at': email.created_at.isoformat(),
+            'notified': email.notified
+        } for email in emails]
+    })
+
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(host='0.0.0.0', port=10000)
