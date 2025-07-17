@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import './BeatStudio.css'
+import LoopBrowser from './LoopBrowser'
+import * as Tone from 'tone'
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000';
 
 const BeatStudio = () => {
@@ -8,41 +10,9 @@ const BeatStudio = () => {
   const [generating, setGenerating] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [audioUrl, setAudioUrl] = useState(null)
-  const audioCtxRef = useRef(null)
-  const intervalRef = useRef(null)
-
-  const playClick = () => {
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)()
-    }
-    const ctx = audioCtxRef.current
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.frequency.value = 800
-    gain.gain.value = 0.15
-    osc.connect(gain).connect(ctx.destination)
-    osc.start()
-    osc.stop(ctx.currentTime + 0.05)
-  }
-
-  const startBeat = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current)
-    const intervalMs = (60 / bpm) * 1000
-    playClick() // immediate first beat
-    intervalRef.current = setInterval(playClick, intervalMs)
-    setPlaying(true)
-  }
-
-  const stopBeat = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current)
-      intervalRef.current = null
-    }
-    setPlaying(false)
-  }
-
-  useEffect(() => () => stopBeat(), [])
-
+  const [loopClips, setLoopClips] = useState([])
+  const PIXELS_PER_SECOND = 20
+  const playersRef = useRef({})
   const handleGenerate = async () => {
     setGenerating(true);
     try {
@@ -67,6 +37,39 @@ const BeatStudio = () => {
       setGenerating(false);
     }
   }
+
+  // Tone.js loop scheduler
+  const startPlayback = async () => {
+    if (playing) return;
+    await Tone.start();
+    Tone.Transport.stop();
+    Tone.Transport.cancel();
+    // Dispose old players
+    Object.values(playersRef.current).forEach(p => p.dispose());
+    playersRef.current = {};
+    // Schedule loops
+    loopClips.forEach(clip => {
+      const url = `/loops/${clip.bpm}/${clip.filename}`;
+      const player = new Tone.Player(url).toDestination();
+      player.loop = true;
+      const durationSec = clip.length / PIXELS_PER_SECOND;
+      player.loopEnd = durationSec;
+      playersRef.current[clip.id] = player;
+      const timeOffset = clip.start / PIXELS_PER_SECOND;
+      Tone.Transport.schedule(time => player.start(time), timeOffset);
+    });
+    Tone.Transport.bpm.value = bpm;
+    Tone.Transport.start();
+    setPlaying(true);
+  };
+
+  const stopPlayback = () => {
+    Tone.Transport.stop();
+    Tone.Transport.cancel();
+    Object.values(playersRef.current).forEach(p => p.dispose());
+    playersRef.current = {};
+    setPlaying(false);
+  };
 
   return (
     <div className="studio-page">
@@ -107,16 +110,24 @@ const BeatStudio = () => {
         <button className="btn-primary" onClick={handleGenerate} disabled={generating}>
           {generating ? 'Generating…' : 'Generate Beat'}
         </button>
+        <LoopBrowser onAddLoop={({ bpm: loopBpm, filename }) => {
+          setLoopClips(prev => [...prev, { id: Date.now() + Math.random(), bpm: loopBpm, filename, start: 0, length: 160 }]);
+        }} />
 
+        {!playing && (
+          <button className="btn-secondary" onClick={startPlayback}>
+            Play Preview
+          </button>
+        )}
         {playing && (
-          <button className="btn-secondary" onClick={stopBeat}>
+          <button className="btn-secondary" onClick={stopPlayback}>
             Stop Preview
           </button>
         )}
       </div>
 
       {playing && (
-        <p className="preview-note">Previewing a simple metronome at {bpm} BPM ({style}). AI-generated audio will replace this.</p>
+        <p className="preview-note">Previewing loops at {bpm} BPM ({style}).</p>
       )}
       {audioUrl && (
         <div className="audio-player">
@@ -124,6 +135,14 @@ const BeatStudio = () => {
           <a href={audioUrl} download="beat.wav" className="download-link">Download Beat</a>
         </div>
       )}
+      <div className="sequencer">
+        <h2 className="sequencer-title">Sequencer</h2>
+        <div className="sequencer-grid">
+          {loopClips.map((clip) => (
+            <div key={clip.id} className="sequencer-clip">{clip.filename}</div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
