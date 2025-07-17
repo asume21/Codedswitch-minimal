@@ -5,10 +5,24 @@ const LandingPage = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // For MVP, just show a thank you. (Wire up backend/email service later)
-    setSubmitted(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setSubmitted(true);
+      } else {
+        alert(data.error || data.message || 'Signup failed.');
+      }
+    } catch (error) {
+      console.error('Error during signup:', error);
+      alert('Signup failed. Please try again.');
+    }
   };
 
   return (

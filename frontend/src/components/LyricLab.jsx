@@ -27,7 +27,7 @@ const LyricLab = ({ userPlan = 'free', onUsageUpdate }) => {
 
   const fetchUserSubscription = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/user/subscription?userId=anonymous`);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/user/subscription?userId=anonymous`);
       const data = await response.json();
       setUserSubscription(data.subscription);
       setUserUsage(data.usage);
@@ -69,21 +69,20 @@ const LyricLab = ({ userPlan = 'free', onUsageUpdate }) => {
 
     try {
       // API call to your backend
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/generate-lyrics`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          style: selectedStyle,
-          topic: topic,
+          prompt: `Generate ${selectedStyle} style lyrics about ${topic}`,
           userId: 'anonymous'
         })
       });
 
       if (response.ok) {
         const data = await response.json();
-        setGeneratedLyrics(data.lyrics);
+        setGeneratedLyrics(data.lyrics || data.response);
         
         // Update usage from response
         if (data.usage) {
@@ -276,11 +275,6 @@ CodedSwitch, that's the coding rap`
             <select 
               value={selectedStyle} 
               onChange={(e) => setSelectedStyle(e.target.value)}
-              className="style-select"
-              id="rap-style-selector"
-              name="rapStyle"
-              aria-label="Select rap style"
-              title="Choose rap style for lyric generation"
             >
               {rapStyles.map(style => (
                 <option key={style.id} value={style.id}>
