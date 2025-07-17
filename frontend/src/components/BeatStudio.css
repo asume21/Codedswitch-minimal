@@ -47,3 +47,20 @@
   border-radius: 12px;
   color: #aaa;
 }
+
+/* Sequencer Styles */
+.sequencer {
+  margin-top: 2rem;
+}
+
+.sequencer-grid {
+  position: relative;
+  width: 100%;
+  min-height: 150px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.2);
+  overflow-x: auto;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 0.5rem;
+}

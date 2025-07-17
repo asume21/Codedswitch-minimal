@@ -138,8 +138,28 @@ const BeatStudio = () => {
       <div className="sequencer">
         <h2 className="sequencer-title">Sequencer</h2>
         <div className="sequencer-grid">
-          {loopClips.map((clip) => (
-            <div key={clip.id} className="sequencer-clip">{clip.filename}</div>
+          {loopClips.map((clip, index) => (
+            <div
+  key={clip.id}
+  className="sequencer-clip"
+  style={{
+    position: 'absolute',
+    top: index * 50,
+    left: clip.start * PIXELS_PER_SECOND,
+    width: clip.length * PIXELS_PER_SECOND,
+    height: 40,
+    backgroundColor: '#1db954',
+    borderRadius: 4,
+    color: '#fff',
+    padding: '4px',
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis'
+  }}
+>
+  {clip.filename}
+</div>
           ))}
         </div>
       </div>
