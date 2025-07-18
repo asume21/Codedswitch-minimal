@@ -10,6 +10,16 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Setup Redis queue for async music generation
+redis_url = os.environ.get('REDIS_URL')
+if not redis_url:
+    raise RuntimeError("REDIS_URL environment variable not set")
+import redis
+from rq import Queue
+import uuid
+redis_conn = redis.from_url(redis_url)
+task_queue = Queue('default', connection=redis_conn)
+
 # MusicGenBackend will be imported lazily in the generate_music route
 
 
@@ -21,7 +31,7 @@ app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', os.environ.get('MAIL_USERNAME', 'no-reply@codedswitch.com'))
 
 mail = Mail(app)
 db.init_app(app)
@@ -100,7 +110,7 @@ def ai_proxy():
                 "Authorization": f"Bearer {grok_api_key}"
             },
             json={
-                "model": "grok-3",  # Correct xAI Grok model name
+                "model": os.environ.get("DEFAULT_GROK_MODEL", "grok-3-mini"),
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": max_tokens
             },
@@ -127,41 +137,41 @@ def generate_proxy():
     # Only Grok API supported - redirect to dedicated endpoint
     return ai_proxy()
 
-from flask import send_file  # type: ignore[reportMissingImports]
+from flask import send_file, send_from_directory  # type: ignore[reportMissingImports]
+
+# Serve static loop files from backend/loops directory
+LOOPS_DIR = os.path.join(os.path.dirname(__file__), 'loops')
+@app.route('/api/loops/<path:subpath>')
+def serve_loops(subpath):
+    return send_from_directory(LOOPS_DIR, subpath)
 
 @app.route('/api/generate-music', methods=['POST'])
 def generate_music():
-    """Generate instrumental music using MusicGen and return the WAV file directly."""
-    try:
-        from musicgen_backend import generate_instrumental
-    except ImportError as e:
-        return jsonify({"error": f"Music generation not available: {e}"}), 500
-
+    """Enqueue a background job for MusicGen and return job ID"""
     data = request.json or {}
     prompt = data.get('prompt', '')
     lyrics = data.get('lyrics', '')
     duration = int(data.get('duration', 30))
-    try:
-        wav_path = generate_instrumental(lyrics, prompt, duration)
-        # Serve the WAV file directly
-        return send_file(wav_path, mimetype='audio/wav', as_attachment=True, download_name='musicgen_output.wav')
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    job_id = str(uuid.uuid4())
+    # Initialize job status and enqueue
+    redis_conn.hset(f"job:{job_id}", mapping={"status": "queued"})
+    task_queue.enqueue('worker.generate_task', job_id, lyrics, prompt, duration)
+    return jsonify({"jobId": job_id}), 202
+
 
 @app.route('/api/music-file', methods=['GET'])
 def serve_music_file():
-    """Serve a WAV file by absolute path (with basic validation)."""
-    wav_path = request.args.get('path')
-    if not wav_path or not wav_path.endswith('.wav'):
-        return jsonify({"error": "Invalid file path."}), 400
-    # Optional: restrict to temp/cache dir for security
-    import tempfile, os
-    cache_dir = os.path.join(tempfile.gettempdir(), "beatstudio_musicgen_cache")
-    if not os.path.abspath(wav_path).startswith(os.path.abspath(cache_dir)):
-        return jsonify({"error": "Access denied."}), 403
-    if not os.path.exists(wav_path):
-        return jsonify({"error": "File not found."}), 404
-    return send_file(wav_path, mimetype='audio/wav', as_attachment=True, download_name='musicgen_output.wav')
+    """Serve generated WAV file for the given job ID"""
+    job_id = request.args.get('jobId')
+    if not job_id:
+        return jsonify({"error": "Missing jobId"}), 400
+    job_data = redis_conn.hgetall(f"job:{job_id}")
+    status = job_data.get(b"status").decode() if job_data.get(b"status") else "unknown"
+    if status != "finished":
+        return jsonify({"status": status, "error": "File not ready"}), 202
+    wav_path = job_data.get(b"filePath").decode()
+    return send_file(wav_path, mimetype='audio/wav', as_attachment=True, download_name=f"{job_id}.wav")
+
 
 
 @app.route('/api/translate-code', methods=['POST', 'OPTIONS'])
@@ -280,6 +290,7 @@ def signup():
         # Send notification email
         msg = Message(
             'New CodedSwitch Signup',
+            sender=app.config['MAIL_DEFAULT_SENDER'],
             recipients=[os.environ.get('ADMIN_EMAIL', 'admin@example.com')]
         )
         msg.body = f"New signup: {email}\nDate: {datetime.utcnow()}"

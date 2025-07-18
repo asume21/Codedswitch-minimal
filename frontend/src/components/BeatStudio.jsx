@@ -18,7 +18,7 @@ const BeatStudio = () => {
   const markerIntervalRef = useRef(null);
 
   const playPadClip = (clip) => {
-    const url = `/loops/${clip.bpm}/${clip.filename}`;
+    const url = `${BACKEND_URL}/api/loops/${clip.bpm}/${clip.filename}`;
     console.log('Playing pad clip:', url);
     const audio = new Audio(url);
     audio.play().catch(err => console.error('Audio playback error:', err));
@@ -26,20 +26,37 @@ const BeatStudio = () => {
   const handleGenerate = async () => {
     setGenerating(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/generate-music`, {
+      // Enqueue generation job
+      const res = await fetch(`${BACKEND_URL}/api/generate-music`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: `${style} beat`, duration: 30 })
       });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to generate beat');
+      if (res.status !== 202) {
+        const errorText = await res.text();
+        throw new Error(errorText || 'Failed to enqueue beat generation');
       }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const { jobId } = await res.json();
+      // Poll for generated file
+      let musicBlob;
+      while (true) {
+        const pollRes = await fetch(`${BACKEND_URL}/api/music-file?jobId=${jobId}`);
+        if (pollRes.status === 202) {
+          await new Promise(r => setTimeout(r, 2000));
+          continue;
+        }
+        if (!pollRes.ok) {
+          const errorText = await pollRes.text();
+          throw new Error(errorText || 'Failed to fetch generated beat');
+        }
+        musicBlob = await pollRes.blob();
+        break;
+      }
+      const url = URL.createObjectURL(musicBlob);
       setAudioUrl(url);
       const audio = new Audio(url);
-      audio.play();
+      audio.play().catch(err => console.error('Audio playback error:', err));
+      
     } catch (error) {
       console.error(error);
       alert('Error generating beat: ' + error.message);
@@ -48,10 +65,14 @@ const BeatStudio = () => {
     }
   }
 
+  const handlePlayClick = async () => {
+    await Tone.start();
+    startPlayback();
+  };
+
   // Tone.js loop scheduler
   const startPlayback = async () => {
     if (playing) return;
-    await Tone.start();
     Tone.Transport.stop();
     Tone.Transport.cancel();
     // Dispose old players
@@ -59,7 +80,7 @@ const BeatStudio = () => {
     playersRef.current = {};
     // Schedule loops
     loopClips.forEach(clip => {
-      const url = `/loops/${clip.bpm}/${clip.filename}`;
+      const url = `${BACKEND_URL}/api/loops/${clip.bpm}/${clip.filename}`;
       const player = new Tone.Player(url).toDestination();
       player.loop = true;
       const durationSec = clip.length / PIXELS_PER_SECOND;
@@ -140,7 +161,7 @@ const BeatStudio = () => {
         }} />
 
         {!playing && (
-          <button className="btn-secondary" onClick={startPlayback}>
+          <button className="btn-secondary" onClick={handlePlayClick}>
             Play Preview
           </button>
         )}
