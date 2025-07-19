@@ -10,7 +10,7 @@ numpy<2.0.0
 
 # Dependencies for MusicGen audio generation
 torch>=2.0.0
-# audiocraft @ git+https://github.com/facebookresearch/audiocraft.git
+audiocraft @ git+https://github.com/facebookresearch/audiocraft.git
 soundfile
 sounddevice
 redis>=4.5.4
