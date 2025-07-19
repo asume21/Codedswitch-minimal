@@ -36,7 +36,9 @@ pids/
 *.pid.lock
 
 # Music generation cache
+# Ignore all wav files except those in backend/loops
 *.wav
+!backend/loops/**/*.wav
 *.mp3
 temp/
 cache/
