@@ -826,7 +826,50 @@ def stripe_success():
         })
         
     except Exception as e:
-        return jsonify({'error': f'Failed to retrieve session: {str(e)}'}), 500
+        return jsonify({'error': 'Payment processing failed'}), 500
+
+# ===== SPA ROUTING - SERVE REACT APP FOR ALL NON-API ROUTES =====
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react_app(path):
+    """Serve React app for all non-API routes (SPA routing)"""
+    # If it's an API route, let Flask handle it normally
+    if path.startswith('api/'):
+        return jsonify({'error': 'API endpoint not found'}), 404
+    
+    # For all other routes, serve the React app's index.html
+    # This enables client-side routing (React Router)
+    try:
+        # Try to serve static files first (CSS, JS, images)
+        if '.' in path and not path.endswith('.html'):
+            # This is likely a static asset, return 404 if not found
+            return jsonify({'error': 'Static file not found'}), 404
+        
+        # For all routes (/, /features, /code-translator, etc.)
+        # Return a simple HTML that loads the React app
+        return '''
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodedSwitch | AI Coding Platform</title>
+    <script>
+        // Redirect to frontend service for proper React app loading
+        window.location.href = 'https://codedswitch-frontend.onrender.com' + window.location.pathname;
+    </script>
+</head>
+<body>
+    <div id="root">
+        <p>Loading CodedSwitch...</p>
+        <p>If not redirected, <a href="https://codedswitch-frontend.onrender.com">click here</a></p>
+    </div>
+</body>
+</html>
+        '''
+    except Exception as e:
+        return jsonify({'error': 'Failed to serve app', 'details': str(e)}), 500
+
 
 if __name__ == '__main__':
     with app.app_context():
