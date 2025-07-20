@@ -8,5 +8,13 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true
+  },
+  build: {
+    outDir: 'dist'
+  },
+  // Fix for React Router - serve index.html for all routes
+  preview: {
+    port: 5173,
+    host: true
   }
 })
