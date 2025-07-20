@@ -16,8 +16,10 @@ const LyricLab = React.lazy(() => import('./components/LyricLab'))
 const CodeTranslator = React.lazy(() => import('./components/CodeTranslator'))
 const BeatStudio = React.lazy(() => import('./components/BeatStudio'))
 const MusicStudio = React.lazy(() => import('./components/MusicStudio'))
+const CodeBeatStudio = React.lazy(() => import('./components/CodeBeatStudio'))
 const Assistant = React.lazy(() => import('./components/Assistant'))
 const VulnerabilityScanner = React.lazy(() => import('./components/VulnerabilityScanner'))
+const AdminPanel = React.lazy(() => import('./components/AdminPanel'))
 const SpessaSynthEmbed = React.lazy(() => import('./components/SpessaSynthEmbed'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
 
@@ -67,6 +69,10 @@ function AppContent() {
     '/vulnerability-scanner': {
       title: 'Vulnerability Scanner | CodedSwitch',
       description: 'Analyze your codebase for security vulnerabilities with AI.'
+    },
+    '/codebeat-studio': {
+      title: 'CodeBeat Studio | CodedSwitch',
+      description: 'Code your music with intuitive commands - where programming meets beat making.'
     }
   };
 
@@ -200,6 +206,12 @@ function AppContent() {
               Music Studio
             </button>
             <button
+              className={`nav-link ${isActive('/codebeat-studio') ? 'active' : ''}`}
+              onClick={() => navigate('/codebeat-studio')}
+            >
+              CodeBeat Studio
+            </button>
+            <button
               className={`nav-link ${isActive('/assistant') ? 'active' : ''}`}
               onClick={() => navigate('/assistant')}
             >
@@ -263,8 +275,10 @@ function AppContent() {
           <Route path="/lyric-lab" element={<div className="lyric-lab-section"><LyricLab userPlan={userPlan} onUsageUpdate={(usage) => {console.log('Lyric usage updated:', usage);}} /></div>} />
           <Route path="/beat-studio" element={<BeatStudio />} />
           <Route path="/music-studio" element={<MusicStudio />} />
+          <Route path="/codebeat-studio" element={<CodeBeatStudio />} />
           <Route path="/assistant" element={<Assistant />} />
           <Route path="/vulnerability-scanner" element={<VulnerabilityScanner />} />
+          <Route path="/admin" element={<AdminPanel />} />
           <Route path="/spessasynth" element={<SpessaSynthEmbed />} />
           <Route path="/success" element={<Success />} />
         </Routes>

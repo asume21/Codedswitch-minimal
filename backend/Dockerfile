@@ -27,5 +27,8 @@ RUN pip install --upgrade pip && \
     pip install --no-cache-dir torch==2.1.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org -r requirements.txt
 
-# Run the application
-CMD python worker.py
+# Expose port for web server
+EXPOSE 5000
+
+# Run the web application (not the worker)
+CMD gunicorn --bind 0.0.0.0:5000 web_backend:app

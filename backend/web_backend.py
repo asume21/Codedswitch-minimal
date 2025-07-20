@@ -4,11 +4,17 @@ from flask_cors import CORS
 import requests
 from flask_mail import Mail, Message
 from models import db, EmailSignup
+import json
 from datetime import datetime
+from api_keys import api_key_manager, require_api_key, create_god_key
+import stripe
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
+
+# Configure Stripe
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
 # Setup Redis queue for async music generation
 redis_url = os.environ.get('REDIS_URL')
@@ -135,6 +141,10 @@ def generate_proxy():
     if not prompt:
         return jsonify({'error': 'Missing prompt'}), 400
 
+    # Check for admin bypass
+    admin_key = data.get('adminKey')
+    is_admin = admin_key == os.environ.get('ADMIN_KEY', 'codedswitch_admin_2025')
+    
     # Get current usage (simplified - in real app you'd use a database)
     # For now, we'll just return success and increment usage
     grok_api_key = os.environ.get('Grok_API_Key')
@@ -397,19 +407,347 @@ def get_subscription_plans():
 
 @app.route('/api/create-checkout-session', methods=['POST'])
 def create_checkout_session():
-    """Create Stripe checkout session (placeholder)"""
-    data = request.json or {}
-    plan_id = data.get('planId')
+    """Create Stripe checkout session with automatic API key generation"""
+    try:
+        data = request.json or {}
+        plan_id = data.get('planId')
+        user_email = data.get('email')
+        
+        if not plan_id:
+            return jsonify({'error': 'Missing planId'}), 400
+        
+        # Plan pricing mapping
+        plan_prices = {
+            'pro': {'price': 999, 'name': 'Pro Plan'},  # $9.99 in cents
+            'premium': {'price': 2999, 'name': 'Premium Plan'}  # $29.99 in cents
+        }
+        
+        if plan_id not in plan_prices:
+            return jsonify({'error': 'Invalid plan'}), 400
+        
+        # Create Stripe checkout session
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': f'CodedSwitch {plan_prices[plan_id]["name"]}',
+                        'description': f'Monthly subscription to CodedSwitch {plan_id.title()} features'
+                    },
+                    'unit_amount': plan_prices[plan_id]['price'],
+                    'recurring': {
+                        'interval': 'month'
+                    }
+                },
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=f'{request.headers.get("Origin", "http://localhost:3000")}/success?session_id={{CHECKOUT_SESSION_ID}}',
+            cancel_url=f'{request.headers.get("Origin", "http://localhost:3000")}/pricing',
+            customer_email=user_email,
+            metadata={
+                'plan_id': plan_id,
+                'user_email': user_email or 'unknown'
+            }
+        )
+        
+        return jsonify({
+            'sessionId': checkout_session.id,
+            'url': checkout_session.url
+        })
+        
+    except stripe.error.StripeError as e:
+        return jsonify({'error': f'Stripe error: {str(e)}'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+@app.route('/api/admin/reset-usage', methods=['POST'])
+def reset_user_usage():
+    """Admin endpoint to reset usage limits"""
+    data = request.get_json() or {}
+    admin_key = data.get('adminKey')
+    user_id = data.get('userId', 'anonymous')
     
-    if not plan_id:
-        return jsonify({'error': 'Missing planId'}), 400
+    # Simple admin key check (in production, use proper authentication)
+    if admin_key != os.environ.get('ADMIN_KEY', 'codedswitch_admin_2025'):
+        return jsonify({'error': 'Invalid admin key'}), 403
     
-    # Placeholder response - in real implementation, create Stripe session
+    # Reset usage (simplified - in real app you'd update database)
     return jsonify({
-        'sessionId': f'cs_test_{plan_id}_placeholder',
-        'url': f'https://checkout.stripe.com/pay/cs_test_{plan_id}_placeholder',
-        'message': 'Stripe integration not implemented yet'
+        'message': f'Usage reset for user {user_id}',
+        'usage': {
+            'lyricsGenerated': 0,
+            'lastReset': str(datetime.now()),
+            'plan': 'unlimited'
+        }
     })
+
+@app.route('/api/codebeat-pattern', methods=['POST'])
+def generate_codebeat_pattern():
+    """Generate music from CodeBeat Studio patterns"""
+    try:
+        data = request.get_json()
+        code_pattern = data.get('code', '')
+        tempo = data.get('tempo', 120)
+        key = data.get('key', 'C')
+        
+        # Enhanced prompt for code-based music generation
+        enhanced_prompt = f"""
+        Create a {tempo} BPM instrumental track in {key} based on this code pattern:
+        
+        {code_pattern}
+        
+        Interpret the code structure musically:
+        - Function calls as melodic phrases
+        - Loops as repeating rhythmic patterns  
+        - Conditional statements as dynamic changes
+        - Variables as harmonic elements
+        
+        Style: Modern electronic with clear rhythmic structure
+        """
+        
+        # Create job for async processing
+        job_id = str(uuid.uuid4())
+        job = q.enqueue(
+            'worker.generate_task',
+            job_id,
+            '',  # No lyrics for instrumental
+            enhanced_prompt,
+            30,  # Duration
+            job_timeout='10m'
+        )
+        
+        # Store initial job status
+        redis_conn.hset(f"job:{job_id}", mapping={
+            "status": "processing",
+            "created_at": str(datetime.now()),
+            "pattern_type": "codebeat"
+        })
+        
+        return jsonify({
+            "jobId": job_id,
+            "status": "processing",
+            "message": "Converting your code pattern to music..."
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ===== API KEY MANAGEMENT ENDPOINTS =====
+
+@app.route('/api/keys/generate', methods=['POST'])
+def generate_api_key():
+    """Generate a new API key"""
+    data = request.get_json() or {}
+    admin_key = data.get('adminKey')
+    
+    # Only admin can generate keys
+    if admin_key != os.environ.get('ADMIN_KEY', 'codedswitch_admin_2025'):
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    plan = data.get('plan', 'free')
+    user_id = data.get('userId')
+    description = data.get('description', '')
+    
+    try:
+        api_key = api_key_manager.generate_key(plan, user_id, description)
+        return jsonify({
+            'api_key': api_key,
+            'plan': plan,
+            'message': f'API key generated for {plan} plan'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/keys/god', methods=['POST'])
+def create_god_mode_key():
+    """Create the ultimate God mode key"""
+    data = request.get_json() or {}
+    admin_key = data.get('adminKey')
+    
+    # Only admin can create God key
+    if admin_key != os.environ.get('ADMIN_KEY', 'codedswitch_admin_2025'):
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    try:
+        god_key = create_god_key()
+        return jsonify({
+            'god_key': god_key,
+            'plan': 'god',
+            'message': 'God mode key created - unlimited everything!',
+            'powers': [
+                'Unlimited lyric generations',
+                'Unlimited music generations', 
+                'Unlimited code translations',
+                'Unlimited vulnerability scans',
+                'Unlimited CodeBeat generations',
+                'Admin panel access',
+                'Never expires',
+                'Bypasses all limits'
+            ]
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/keys/stats/<api_key>', methods=['GET'])
+def get_key_stats(api_key):
+    """Get statistics for an API key"""
+    try:
+        stats = api_key_manager.get_user_stats(api_key)
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/keys/validate', methods=['POST'])
+def validate_api_key():
+    """Validate an API key"""
+    data = request.get_json() or {}
+    api_key = data.get('apiKey')
+    
+    if not api_key:
+        return jsonify({'error': 'API key required'}), 400
+    
+    is_valid, key_info = api_key_manager.validate_key(api_key)
+    
+    if is_valid:
+        return jsonify({
+            'valid': True,
+            'plan': key_info['plan'],
+            'user_id': key_info['user_id'],
+            'created_at': key_info['created_at']
+        })
+    else:
+        return jsonify({'valid': False, 'error': 'Invalid API key'}), 401
+
+@app.route('/api/keys/upgrade', methods=['POST'])
+def upgrade_key_plan():
+    """Upgrade an API key to a different plan"""
+    data = request.get_json() or {}
+    admin_key = data.get('adminKey')
+    api_key = data.get('apiKey')
+    new_plan = data.get('newPlan')
+    
+    # Only admin can upgrade plans
+    if admin_key != os.environ.get('ADMIN_KEY', 'codedswitch_admin_2025'):
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    if not api_key or not new_plan:
+        return jsonify({'error': 'API key and new plan required'}), 400
+    
+    success = api_key_manager.upgrade_plan(api_key, new_plan)
+    
+    if success:
+        return jsonify({
+            'message': f'API key upgraded to {new_plan} plan',
+            'api_key': api_key[:10] + '...',
+            'new_plan': new_plan
+        })
+    else:
+        return jsonify({'error': 'Failed to upgrade plan'}), 400
+
+# ===== STRIPE WEBHOOK ENDPOINTS =====
+
+@app.route('/api/stripe/webhook', methods=['POST'])
+def stripe_webhook():
+    """Handle Stripe webhook events - automatically generate API keys on successful payment"""
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+    webhook_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
+    
+    try:
+        # Verify webhook signature
+        if webhook_secret:
+            event = stripe.Webhook.construct_event(
+                payload, sig_header, webhook_secret
+            )
+        else:
+            # For development - skip signature verification
+            event = stripe.Event.construct_from(
+                json.loads(payload), stripe.api_key
+            )
+        
+        # Handle successful subscription creation
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            
+            # Extract plan and user info from metadata
+            plan_id = session.get('metadata', {}).get('plan_id')
+            user_email = session.get('customer_email') or session.get('metadata', {}).get('user_email')
+            customer_id = session.get('customer')
+            
+            if plan_id and user_email:
+                try:
+                    # Generate API key for the user
+                    api_key = api_key_manager.generate_key(
+                        plan=plan_id,
+                        user_id=user_email,
+                        description=f'Auto-generated for {plan_id} subscription via Stripe'
+                    )
+                    
+                    # TODO: Send email with API key to user
+                    # send_api_key_email(user_email, api_key, plan_id)
+                    
+                    print(f"✅ API key generated for {user_email}: {api_key[:20]}...")
+                    
+                except Exception as e:
+                    print(f"❌ Failed to generate API key: {e}")
+        
+        # Handle subscription updates
+        elif event['type'] == 'customer.subscription.updated':
+            subscription = event['data']['object']
+            customer_id = subscription.get('customer')
+            status = subscription.get('status')
+            
+            # Handle plan changes, cancellations, etc.
+            print(f"📝 Subscription updated for customer {customer_id}: {status}")
+        
+        # Handle failed payments
+        elif event['type'] == 'invoice.payment_failed':
+            invoice = event['data']['object']
+            customer_id = invoice.get('customer')
+            
+            # TODO: Deactivate API key or downgrade plan
+            print(f"❌ Payment failed for customer {customer_id}")
+        
+        return jsonify({'status': 'success'})
+        
+    except ValueError as e:
+        # Invalid payload
+        return jsonify({'error': 'Invalid payload'}), 400
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        return jsonify({'error': 'Invalid signature'}), 400
+    except Exception as e:
+        print(f"Webhook error: {e}")
+        return jsonify({'error': 'Webhook error'}), 500
+
+@app.route('/api/stripe/success', methods=['GET'])
+def stripe_success():
+    """Handle successful payment redirect"""
+    session_id = request.args.get('session_id')
+    
+    if not session_id:
+        return jsonify({'error': 'Missing session_id'}), 400
+    
+    try:
+        # Retrieve the session
+        session = stripe.checkout.Session.retrieve(session_id)
+        
+        # Get plan info
+        plan_id = session.get('metadata', {}).get('plan_id')
+        user_email = session.get('customer_email')
+        
+        return jsonify({
+            'success': True,
+            'plan': plan_id,
+            'email': user_email,
+            'message': f'Welcome to CodedSwitch {plan_id.title()}! Your API key will be sent to {user_email}',
+            'session_id': session_id
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to retrieve session: {str(e)}'}), 500
 
 if __name__ == '__main__':
     with app.app_context():
