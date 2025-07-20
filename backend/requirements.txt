@@ -8,9 +8,8 @@ requests==2.32.3
 gunicorn==21.2.0
 numpy<2.0.0
 
-# Dependencies for MusicGen audio generation - standard versions for compatibility
-torch==2.1.0
-torchaudio==2.1.0
+# Dependencies for MusicGen audio generation - torch installed separately with CPU optimization
+# torch and torchaudio installed via Dockerfile from PyTorch CPU index
 audiocraft @ git+https://github.com/facebookresearch/audiocraft.git
 soundfile==0.12.1
 sounddevice==0.4.6
