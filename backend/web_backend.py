@@ -274,7 +274,7 @@ def index():
     """Health-check endpoint for root path."""
     return jsonify({"status": "ok", "message": "CodedSwitch backend is running"})
 
-@app.route('/api/health')
+@app.route('/api/health', methods=['GET', 'OPTIONS'])
 def health():
     """Health-check endpoint for API path."""
     return jsonify({"status": "ok", "message": "API healthy"})
@@ -314,7 +314,7 @@ def get_subscription():
 
 
 
-@app.route('/api/ai', methods=['POST'])
+@app.route('/api/ai', methods=['POST', 'OPTIONS'])
 def ai_proxy():
     """Endpoint for AI completions using Grok API only."""
     import os
@@ -349,7 +349,7 @@ def ai_proxy():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/api/generate', methods=['POST'])
+@app.route('/api/generate', methods=['POST', 'OPTIONS'])
 def generate_proxy():
     '''Generate lyrics using Grok API with usage tracking.'''
     data = request.json or {}
@@ -404,11 +404,11 @@ from flask import send_file, send_from_directory  # type: ignore[reportMissingIm
 
 # Serve static loop files from backend/loops directory
 LOOPS_DIR = os.path.join(os.path.dirname(__file__), 'loops')
-@app.route('/api/loops/<path:subpath>')
+@app.route('/api/loops/<path:subpath>', methods=['GET', 'OPTIONS'])
 def serve_loops(subpath):
     return send_from_directory(LOOPS_DIR, subpath)
 
-@app.route('/api/generate-music', methods=['POST'])
+@app.route('/api/generate-music', methods=['POST', 'OPTIONS'])
 def generate_music():
     """Generate music - simplified version without worker queue"""
     data = request.json or {}
@@ -446,7 +446,7 @@ def generate_music():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/music-file', methods=['GET'])
+@app.route('/api/music-file', methods=['GET', 'OPTIONS'])
 def serve_music_file():
     """Serve generated WAV file for the given job ID"""
     job_id = request.args.get('jobId')
@@ -567,7 +567,7 @@ def translate_code():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/vulnerability-scan', methods=['POST'])
+@app.route('/api/vulnerability-scan', methods=['POST', 'OPTIONS'])
 def vulnerability_scan():
     """Scan code for security vulnerabilities via Grok API."""
     data = request.json or {}
@@ -600,7 +600,7 @@ def vulnerability_scan():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/signup', methods=['POST'])
+@app.route('/api/signup', methods=['POST', 'OPTIONS'])
 def signup():
     data = request.json
     email = data.get('email')
@@ -639,7 +639,7 @@ def signup():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/test-emails', methods=['GET'])
+@app.route('/api/test-emails', methods=['GET', 'OPTIONS'])
 def test_emails():
     """Endpoint to test email storage (for development only)"""
     emails = EmailSignup.query.all()
@@ -652,7 +652,7 @@ def test_emails():
         } for email in emails]
     })
 
-@app.route('/api/subscription-plans', methods=['GET'])
+@app.route('/api/subscription-plans', methods=['GET', 'OPTIONS'])
 def get_subscription_plans():
     """Get available subscription plans"""
     plans = [
@@ -696,7 +696,7 @@ def get_subscription_plans():
     ]
     return jsonify({"plans": plans})
 
-@app.route('/api/create-checkout-session', methods=['POST'])
+@app.route('/api/create-checkout-session', methods=['POST', 'OPTIONS'])
 def create_checkout_session():
     """Create Stripe checkout session with automatic API key generation"""
     try:
@@ -753,7 +753,7 @@ def create_checkout_session():
     except Exception as e:
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/api/admin/reset-usage', methods=['POST'])
+@app.route('/api/admin/reset-usage', methods=['POST', 'OPTIONS'])
 def reset_user_usage():
     """Admin endpoint to reset usage limits"""
     data = request.get_json() or {}
@@ -774,7 +774,7 @@ def reset_user_usage():
         }
     })
 
-@app.route('/api/codebeat-pattern', methods=['POST'])
+@app.route('/api/codebeat-pattern', methods=['POST', 'OPTIONS'])
 def generate_codebeat_pattern():
     """Generate music from CodeBeat Studio patterns - simplified version"""
     try:
@@ -836,7 +836,7 @@ def generate_codebeat_pattern():
         return jsonify({"error": str(e)}), 500
 
 # ===== PROFESSIONAL CONTACT & SUPPORT ENDPOINTS =====
-@app.route('/api/contact', methods=['POST'])
+@app.route('/api/contact', methods=['POST', 'OPTIONS'])
 def contact_form():
     """Handle contact form submissions with professional email routing"""
     data = request.json or {}
@@ -935,7 +935,7 @@ def contact_form():
 
 # ===== API KEY MANAGEMENT ENDPOINTS =====
 
-@app.route('/api/keys/generate', methods=['POST'])
+@app.route('/api/keys/generate', methods=['POST', 'OPTIONS'])
 def generate_api_key():
     """Generate a new API key"""
     data = request.get_json() or {}
@@ -959,7 +959,7 @@ def generate_api_key():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/keys/god', methods=['POST'])
+@app.route('/api/keys/god', methods=['POST', 'OPTIONS'])
 def create_god_mode_key():
     """Create the ultimate God mode key"""
     data = request.get_json() or {}
@@ -989,7 +989,7 @@ def create_god_mode_key():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/keys/stats/<api_key>', methods=['GET'])
+@app.route('/api/keys/stats/<api_key>', methods=['GET', 'OPTIONS'])
 def get_key_stats(api_key):
     """Get statistics for an API key"""
     try:
@@ -998,7 +998,7 @@ def get_key_stats(api_key):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/keys/validate', methods=['POST'])
+@app.route('/api/keys/validate', methods=['POST', 'OPTIONS'])
 def validate_api_key():
     """Validate an API key"""
     data = request.get_json() or {}
@@ -1019,7 +1019,7 @@ def validate_api_key():
     else:
         return jsonify({'valid': False, 'error': 'Invalid API key'}), 401
 
-@app.route('/api/keys/upgrade', methods=['POST'])
+@app.route('/api/keys/upgrade', methods=['POST', 'OPTIONS'])
 def upgrade_key_plan():
     """Upgrade an API key to a different plan"""
     data = request.get_json() or {}
@@ -1047,7 +1047,7 @@ def upgrade_key_plan():
 
 # ===== STRIPE WEBHOOK ENDPOINTS =====
 
-@app.route('/api/stripe/webhook', methods=['POST'])
+@app.route('/api/stripe/webhook', methods=['POST', 'OPTIONS'])
 def stripe_webhook():
     """Handle Stripe webhook events - automatically generate API keys on successful payment"""
     payload = request.get_data(as_text=True)
@@ -1125,7 +1125,7 @@ def stripe_webhook():
         print(f"Webhook error: {e}")
         return jsonify({'error': 'Webhook error'}), 500
 
-@app.route('/api/stripe/success', methods=['GET'])
+@app.route('/api/stripe/success', methods=['GET', 'OPTIONS'])
 def stripe_success():
     """Handle successful payment redirect"""
     session_id = request.args.get('session_id')
@@ -1153,6 +1153,17 @@ def stripe_success():
         return jsonify({'error': 'Payment processing failed'}), 500
 
 # ===== SPA ROUTING - SERVE REACT APP FOR ALL NON-API ROUTES =====
+
+# ===== UNIVERSAL API OPTIONS HANDLER FOR CORS =====
+@app.route('/api/<path:path>', methods=['OPTIONS'])
+def catch_all_api_options(path):
+    response = jsonify({})
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+    response.headers['Access-Control-Expose-Headers'] = 'Content-Type, Authorization'
+    return response
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve_react_app(path):

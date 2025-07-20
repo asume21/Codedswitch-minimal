@@ -13,7 +13,7 @@ const Pricing = () => {
 
   const fetchPlans = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/subscription-plans`);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/subscription-plans`);
       const data = await response.json();
       setPlans(data.plans);
     } catch (error) {
@@ -62,7 +62,7 @@ const Pricing = () => {
 
     setCheckoutLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/create-checkout-session`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
