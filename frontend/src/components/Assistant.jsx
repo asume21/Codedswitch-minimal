@@ -10,7 +10,7 @@ const Assistant = () => {
     if (!prompt.trim()) return;
     setLoading(true);
     try {
-      const response = await fetch(import.meta.env.VITE_AI_URL, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/ai`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
