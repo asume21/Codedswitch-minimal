@@ -9,12 +9,12 @@ const createTrack = () => ({ id: Date.now() + Math.random(), clips: [] })
 
 const COLORS = ['#667eea', '#ff6b6b', '#10b981', '#facc15', '#ec4899']
 
-// Remote open-source drum samples (small files)
-// Local drum samples served from /public/samples (add files there)
+// Fallback to synthesized sounds since sample files don't exist yet
+// TODO: Add actual drum samples to /public/samples/
 const SAMPLE_URLS = {
-  kick: '/samples/E808_BD[short]-01.wav',
-  snare: '/samples/E808_SD-01.wav',
-  hat:  '/samples/E808_CH-01.wav'
+  kick: null,  // Will use synthesized kick
+  snare: null, // Will use synthesized snare
+  hat: null    // Will use synthesized hat
 }
 
 // For up to three tracks we map kick, snare, hat; extra tracks fall back to a synth.
@@ -87,10 +87,10 @@ const MusicStudio = () => {
   }, [dragging])
 
   // --- Playback helpers using Tone.js ---
-  const scheduleClipSample = (player, clip) => {
+  const scheduleClipSample = (synth, clip) => {
     const offsetSec = clip.start / PIXELS_PER_SECOND
     Tone.Transport.schedule((time) => {
-      player.start(time)
+      synth.triggerAttackRelease('C2', '8n', time)
     }, offsetSec)
   }
 
@@ -112,10 +112,13 @@ const MusicStudio = () => {
     synthsRef.current.forEach(s => s.dispose())
     synthsRef.current = []
 
-    // Load sample players once
+    // Create synthesized drum sounds since samples don't exist
     if (!playersRef.current) {
-      playersRef.current = new Tone.Players(SAMPLE_URLS).toDestination()
-      await playersRef.current.load()
+      playersRef.current = {
+        kick: new Tone.MembraneSynth().toDestination(),
+        snare: new Tone.NoiseSynth().toDestination(), 
+        hat: new Tone.MetalSynth().toDestination()
+      }
 
       // Load and schedule loop clips
       for (const clip of loopClips) {
@@ -135,13 +138,13 @@ const MusicStudio = () => {
     tracks.forEach((track, idx) => {
       if (idx === 0) {
         // Kick
-        track.clips.forEach(clip => scheduleClipSample(playersRef.current.get('kick'), clip))
+        track.clips.forEach(clip => scheduleClipSample(playersRef.current.kick, clip))
       } else if (idx === 1) {
         // Snare
-        track.clips.forEach(clip => scheduleClipSample(playersRef.current.get('snare'), clip))
+        track.clips.forEach(clip => scheduleClipSample(playersRef.current.snare, clip))
       } else if (idx === 2) {
         // Hi-hat
-        track.clips.forEach(clip => scheduleClipSample(playersRef.current.get('hat'), clip))
+        track.clips.forEach(clip => scheduleClipSample(playersRef.current.hat, clip))
       } else {
         // Extra tracks fall back to synth tone
         const synth = new Tone.Synth({ oscillator: { type: 'triangle' } }).toDestination()
@@ -174,18 +177,42 @@ const MusicStudio = () => {
       const fullPrompt = lyrics
         ? `${instrument} instrumental with melody inspired by lyrics: ${lyrics}`
         : `${instrument} instrumental: ${prompt}`
+      
+      // Enqueue generation job
       const response = await fetch(`${BACKEND_URL}/api/generate-music`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: fullPrompt, lyrics, duration: 30 })
       })
-      if (!response.ok) {
+      if (response.status !== 202) {
         const errorText = await response.text()
-        throw new Error(errorText || 'Failed to generate instrumental')
+        throw new Error(errorText || 'Failed to enqueue music generation')
       }
-      const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
+      const { jobId } = await response.json()
+      
+      // Poll for generated file
+      let musicBlob
+      while (true) {
+        const pollRes = await fetch(`${BACKEND_URL}/api/music-file?jobId=${jobId}`)
+        if (pollRes.status === 202) {
+          await new Promise(r => setTimeout(r, 2000))
+          continue
+        }
+        if (!pollRes.ok) {
+          const errorText = await pollRes.text()
+          throw new Error(errorText || 'Failed to fetch generated music')
+        }
+        musicBlob = await pollRes.blob()
+        break
+      }
+      
+      const url = URL.createObjectURL(musicBlob)
       setAudioUrl(url)
+      
+      // Auto-play the generated music
+      const audio = new Audio(url)
+      audio.play().catch(err => console.error('Audio playback error:', err))
+      
     } catch (error) {
       console.error(error)
       alert('Error generating instrumental: ' + error.message)
