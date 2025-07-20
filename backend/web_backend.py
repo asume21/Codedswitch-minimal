@@ -232,14 +232,34 @@ mail = Mail(app)
 db.init_app(app)
 
 CORS(app, 
-    origins=["http://localhost:5173", "http://localhost:5174", "https://www.codedswitch.com", "https://codedswitch.com"],
+    origins=[
+        "http://localhost:5173", 
+        "http://localhost:5174", 
+        "https://www.codedswitch.com", 
+        "https://codedswitch.com",
+        "https://codedswitch-frontend.onrender.com"
+    ],
     supports_credentials=True,
-    allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Access-Control-Allow-Origin"],
-    methods=["GET", "POST", "OPTIONS"])
+    allow_headers=[
+        "Content-Type", 
+        "Authorization", 
+        "X-Requested-With", 
+        "Accept",
+        "Origin"
+    ],
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    expose_headers=["Content-Type", "Authorization"])
 
 # Add security headers
 @app.after_request
 def after_request(response):
+    # CORS headers
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+    response.headers['Access-Control-Expose-Headers'] = 'Content-Type, Authorization'
+    
+    # Security headers
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['X-XSS-Protection'] = '1; mode=block'
@@ -258,6 +278,16 @@ def index():
 def health():
     """Health-check endpoint for API path."""
     return jsonify({"status": "ok", "message": "API healthy"})
+
+@app.before_request
+def handle_preflight():
+    """Handle CORS preflight requests"""
+    if request.method == "OPTIONS":
+        response = jsonify({})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+        return response
 
 @app.route('/api/user/subscription', methods=['GET', 'OPTIONS'])
 def get_subscription():
