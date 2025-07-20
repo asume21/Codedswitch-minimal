@@ -156,7 +156,6 @@ const MusicStudio = () => {
         // Schedule loop playback
         scheduleClipSample(loopPlayersRef.current[clip.id], clip)
       }
-    }
 
       tracks.forEach((track, idx) => {
         if (idx === 0) {
