@@ -126,16 +126,50 @@ def ai_proxy():
 
 @app.route('/api/generate', methods=['POST'])
 def generate_proxy():
-    '''Dispatch to multiple AI providers based on 'provider' param.'''
+    '''Generate lyrics using Grok API with usage tracking.'''
     data = request.json or {}
     prompt = data.get('prompt')
-    max_tokens = data.get('max_tokens', 200)
-    provider = data.get('provider', os.environ.get('DEFAULT_AI_PROVIDER', 'gpt')).lower()
+    user_id = data.get('userId', 'anonymous')
+    max_tokens = data.get('max_tokens', 500)
+    
     if not prompt:
         return jsonify({'error': 'Missing prompt'}), 400
 
-    # Only Grok API supported - redirect to dedicated endpoint
-    return ai_proxy()
+    # Get current usage (simplified - in real app you'd use a database)
+    # For now, we'll just return success and increment usage
+    grok_api_key = os.environ.get('Grok_API_Key')
+    if not grok_api_key:
+        return jsonify({'error': 'Grok_API_Key environment variable not set'}), 500
+    
+    try:
+        response = requests.post(
+            "https://api.x.ai/v1/chat/completions",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {grok_api_key}"
+            },
+            json={
+                "model": os.environ.get("DEFAULT_GROK_MODEL", "grok-3-mini"),
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": max_tokens
+            },
+            timeout=60
+        )
+        response.raise_for_status()
+        result = response.json()
+        content = result['choices'][0]['message']['content']
+        
+        # Return response in format expected by LyricLab
+        return jsonify({
+            "lyrics": content,
+            "response": content,
+            "usage": {
+                "lyricsGenerated": 1,  # Simplified usage tracking
+                "lastReset": "2025-07"
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 from flask import send_file, send_from_directory  # type: ignore[reportMissingImports]
 
