@@ -28,6 +28,195 @@ task_queue = Queue('default', connection=redis_conn)
 
 # MusicGenBackend will be imported lazily in the generate_music route
 
+# ===== PROFESSIONAL EMAIL TEMPLATES =====
+def send_api_key_email(user_email, api_key, plan_name, user_name=None):
+    """Send API key to user with professional welcome email"""
+    try:
+        subject = f"🚀 Welcome to CodedSwitch - Your {plan_name} API Key"
+        
+        # Professional HTML email template
+        html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to CodedSwitch</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
+        <h1 style="color: white; margin: 0;">🎵 CodedSwitch</h1>
+        <p style="color: white; margin: 5px 0;">AI-Powered Creative Coding Platform</p>
+    </div>
+    
+    <div style="padding: 30px; background: #f9f9f9;">
+        <h2 style="color: #333;">Welcome{f', {user_name}' if user_name else ''}! 🎉</h2>
+        
+        <p>Thank you for subscribing to <strong>CodedSwitch {plan_name}</strong>! Your creative coding journey starts now.</p>
+        
+        <div style="background: #fff; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #667eea;">🔑 Your API Key</h3>
+            <code style="background: #f4f4f4; padding: 10px; display: block; border-radius: 4px; font-size: 14px; word-break: break-all;">{api_key}</code>
+            <p style="margin-bottom: 0; font-size: 12px; color: #666;">⚠️ Keep this secure - it's your access to all CodedSwitch features!</p>
+        </div>
+        
+        <h3 style="color: #333;">🚀 What You Can Do Now:</h3>
+        <ul style="padding-left: 20px;">
+            <li><strong>Code Translation:</strong> Convert between programming languages instantly</li>
+            <li><strong>AI Music Generation:</strong> Turn your code patterns into beats</li>
+            <li><strong>Lyric Creation:</strong> Generate rap lyrics with AI assistance</li>
+            <li><strong>Vulnerability Scanning:</strong> Secure your code with AI analysis</li>
+            <li><strong>CodeBeat Studio:</strong> Create music from code patterns</li>
+        </ul>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="https://codedswitch.com" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">🎵 Start Creating</a>
+        </div>
+        
+        <h3 style="color: #333;">📚 Quick Start Guide:</h3>
+        <ol>
+            <li>Visit <a href="https://codedswitch.com">codedswitch.com</a></li>
+            <li>Use your API key in any of our tools</li>
+            <li>Start with Code Translation or Lyric Lab</li>
+            <li>Explore CodeBeat Studio for music creation</li>
+        </ol>
+        
+        <div style="background: #e8f4fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h4 style="margin-top: 0; color: #1e88e5;">💡 Pro Tips:</h4>
+            <ul style="margin-bottom: 0;">
+                <li>Bookmark your favorite tools for quick access</li>
+                <li>Try combining code translation with music generation</li>
+                <li>Use vulnerability scanning on all your projects</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div style="background: #333; color: white; padding: 20px; text-align: center;">
+        <p style="margin: 0;">Need help? Email us at <a href="mailto:support@codedswitch.com" style="color: #667eea;">support@codedswitch.com</a></p>
+        <p style="margin: 5px 0 0 0; font-size: 12px; color: #999;">© 2025 CodedSwitch - Where Logic Meets Rhythm</p>
+    </div>
+</body>
+</html>
+        """
+        
+        # Plain text version
+        text_body = f"""
+Welcome to CodedSwitch {plan_name}!
+
+Your API Key: {api_key}
+
+What you can do:
+• Code Translation between programming languages
+• AI Music Generation from code patterns  
+• Lyric Creation with AI assistance
+• Vulnerability Scanning for secure code
+• CodeBeat Studio for music creation
+
+Get started: https://codedswitch.com
+Support: support@codedswitch.com
+
+© 2025 CodedSwitch - Where Logic Meets Rhythm
+        """
+        
+        msg = Message(
+            subject=subject,
+            recipients=[user_email],
+            html=html_body,
+            body=text_body,
+            sender='servicehelp@codedswitch.com'
+        )
+        
+        mail.send(msg)
+        print(f"✅ API key email sent to {user_email}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Failed to send API key email: {e}")
+        return False
+
+def send_support_email(user_email, user_name, subject, message):
+    """Send support inquiry to support team"""
+    try:
+        support_subject = f"Support Request: {subject}"
+        
+        support_body = f"""
+        New support request from CodedSwitch user:
+        
+        From: {user_name} ({user_email})
+        Subject: {subject}
+        
+        Message:
+        {message}
+        
+        ---
+        Sent via CodedSwitch Support System
+        """
+        
+        msg = Message(
+            subject=support_subject,
+            recipients=['servicehelp@codedswitch.com'],
+            body=support_body,
+            sender='servicehelp@codedswitch.com',
+            reply_to=user_email
+        )
+        
+        mail.send(msg)
+        print(f"✅ Support email forwarded from {user_email}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Failed to send support email: {e}")
+        return False
+
+def send_newsletter_signup_confirmation(user_email):
+    """Send confirmation email for newsletter signup"""
+    try:
+        subject = "🎵 Welcome to CodedSwitch Updates!"
+        
+        html_body = f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
+        <h1 style="color: white; margin: 0;">🎵 CodedSwitch</h1>
+    </div>
+    
+    <div style="padding: 30px;">
+        <h2>Thanks for joining our community! 🎉</h2>
+        <p>You're now subscribed to CodedSwitch updates. We'll keep you informed about:</p>
+        
+        <ul>
+            <li>🚀 New features and tools</li>
+            <li>💡 Creative coding tutorials</li>
+            <li>🎵 Music generation tips</li>
+            <li>📊 Platform updates</li>
+        </ul>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="https://codedswitch.com" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px;">Explore CodedSwitch</a>
+        </div>
+    </div>
+    
+    <div style="background: #f0f0f0; padding: 15px; text-align: center; font-size: 12px; color: #666;">
+        <p>CodedSwitch - Where Logic Meets Rhythm</p>
+    </div>
+</body>
+</html>
+        """
+        
+        msg = Message(
+            subject=subject,
+            recipients=[user_email],
+            html=html_body,
+            sender='servicehelp@codedswitch.com'
+        )
+        
+        mail.send(msg)
+        print(f"✅ Newsletter confirmation sent to {user_email}")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Failed to send newsletter confirmation: {e}")
+        return False
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///codedswitch.db')
@@ -400,13 +589,16 @@ def signup():
         db.session.add(signup)
         db.session.commit()
         
-        # Send notification email
+        # Send professional confirmation email to user
+        send_newsletter_signup_confirmation(email)
+        
+        # Send notification email to admin
         msg = Message(
-            'New CodedSwitch Signup',
-            sender=app.config['MAIL_DEFAULT_SENDER'],
-            recipients=[os.environ.get('ADMIN_EMAIL', 'admin@example.com')]
+            'New CodedSwitch Newsletter Signup',
+            sender='servicehelp@codedswitch.com',
+            recipients=['servicehelp@codedswitch.com']
         )
-        msg.body = f"New signup: {email}\nDate: {datetime.utcnow()}"
+        msg.body = f"New newsletter signup: {email}\nDate: {datetime.utcnow()}\nTotal signups: {EmailSignup.query.count()}"
         mail.send(msg)
         
         return jsonify({
@@ -613,6 +805,104 @@ def generate_codebeat_pattern():
         print(f"CodeBeat pattern error: {e}")
         return jsonify({"error": str(e)}), 500
 
+# ===== PROFESSIONAL CONTACT & SUPPORT ENDPOINTS =====
+@app.route('/api/contact', methods=['POST'])
+def contact_form():
+    """Handle contact form submissions with professional email routing"""
+    data = request.json or {}
+    
+    name = data.get('name', '').strip()
+    email = data.get('email', '').strip()
+    subject = data.get('subject', '').strip()
+    message = data.get('message', '').strip()
+    inquiry_type = data.get('type', 'general')  # general, technical, billing, partnership
+    
+    # Validation
+    if not name or not email or not message:
+        return jsonify({'error': 'Name, email, and message are required'}), 400
+    
+    if '@' not in email:
+        return jsonify({'error': 'Invalid email address'}), 400
+    
+    try:
+        # Route to appropriate email based on inquiry type
+        # All inquiries go to your main support email for now
+        email_routing = {
+            'general': 'servicehelp@codedswitch.com',
+            'technical': 'servicehelp@codedswitch.com', 
+            'billing': 'servicehelp@codedswitch.com',
+            'partnership': 'servicehelp@codedswitch.com',
+            'api': 'servicehelp@codedswitch.com'
+        }
+        
+        recipient = email_routing.get(inquiry_type, 'servicehelp@codedswitch.com')
+        
+        # Send to support team
+        support_success = send_support_email(email, name, subject or f"{inquiry_type.title()} Inquiry", message)
+        
+        # Send confirmation to user
+        confirmation_subject = "✅ We received your message - CodedSwitch Support"
+        confirmation_html = f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center;">
+        <h1 style="color: white; margin: 0;">🎵 CodedSwitch Support</h1>
+    </div>
+    
+    <div style="padding: 30px;">
+        <h2>Thanks for reaching out, {name}! 👋</h2>
+        
+        <p>We've received your message and our team will get back to you within 24 hours.</p>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h4 style="margin-top: 0;">Your Message:</h4>
+            <p><strong>Subject:</strong> {subject or 'General Inquiry'}</p>
+            <p><strong>Type:</strong> {inquiry_type.title()}</p>
+            <p><strong>Message:</strong></p>
+            <p style="font-style: italic;">{message}</p>
+        </div>
+        
+        <p>In the meantime, you might find these helpful:</p>
+        <ul>
+            <li>📚 <a href="https://codedswitch.com/docs">Documentation</a></li>
+            <li>🎵 <a href="https://codedswitch.com/tutorials">Tutorials</a></li>
+            <li>💬 <a href="https://codedswitch.com/community">Community Forum</a></li>
+        </ul>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="https://codedswitch.com" style="background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px;">Back to CodedSwitch</a>
+        </div>
+    </div>
+    
+    <div style="background: #f0f0f0; padding: 15px; text-align: center; font-size: 12px; color: #666;">
+        <p>CodedSwitch Support Team</p>
+        <p>Email: {recipient} | Website: codedswitch.com</p>
+    </div>
+</body>
+</html>
+        """
+        
+        confirmation_msg = Message(
+            subject=confirmation_subject,
+            recipients=[email],
+            html=confirmation_html,
+            sender='servicehelp@codedswitch.com'
+        )
+        
+        mail.send(confirmation_msg)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Thank you for your message! We\'ll get back to you within 24 hours.',
+            'inquiry_type': inquiry_type,
+            'support_email': recipient
+        })
+        
+    except Exception as e:
+        print(f"❌ Contact form error: {e}")
+        return jsonify({'error': 'Failed to send message. Please try again.'}), 500
+
 # ===== API KEY MANAGEMENT ENDPOINTS =====
 
 @app.route('/api/keys/generate', methods=['POST'])
@@ -764,10 +1054,14 @@ def stripe_webhook():
                         description=f'Auto-generated for {plan_id} subscription via Stripe'
                     )
                     
-                    # TODO: Send email with API key to user
-                    # send_api_key_email(user_email, api_key, plan_id)
+                    # Send professional welcome email with API key
+                    plan_name = plan_id.title() + " Plan"
+                    email_sent = send_api_key_email(user_email, api_key, plan_name)
                     
-                    print(f"✅ API key generated for {user_email}: {api_key[:20]}...")
+                    if email_sent:
+                        print(f"✅ API key generated and emailed to {user_email}: {api_key[:20]}...")
+                    else:
+                        print(f"⚠️ API key generated but email failed for {user_email}: {api_key[:20]}...")
                     
                 except Exception as e:
                     print(f"❌ Failed to generate API key: {e}")
