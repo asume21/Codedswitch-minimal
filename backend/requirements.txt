@@ -8,9 +8,9 @@ requests==2.32.3
 gunicorn==21.2.0
 numpy<2.0.0
 
-# Dependencies for MusicGen audio generation - pinned versions for faster builds
-torch==2.1.0
-torchaudio==2.1.0
+# Dependencies for MusicGen audio generation - CPU-only for faster builds
+torch==2.1.0+cpu
+torchaudio==2.1.0+cpu
 audiocraft @ git+https://github.com/facebookresearch/audiocraft.git
 soundfile==0.12.1
 sounddevice==0.4.6

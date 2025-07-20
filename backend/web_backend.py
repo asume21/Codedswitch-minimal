@@ -351,6 +351,66 @@ def test_emails():
         } for email in emails]
     })
 
+@app.route('/api/subscription-plans', methods=['GET'])
+def get_subscription_plans():
+    """Get available subscription plans"""
+    plans = [
+        {
+            "id": "free",
+            "name": "Free",
+            "price": 0,
+            "interval": "month",
+            "features": [
+                "5 Lyric Generations per Month",
+                "Basic Code Translation",
+                "Community Support"
+            ]
+        },
+        {
+            "id": "pro",
+            "name": "Pro",
+            "price": 9.99,
+            "interval": "month",
+            "features": [
+                "Unlimited Lyric Generations",
+                "Advanced Code Translation",
+                "Music Generation (10 tracks/month)",
+                "Priority Support",
+                "API Access"
+            ]
+        },
+        {
+            "id": "premium",
+            "name": "Premium",
+            "price": 19.99,
+            "interval": "month",
+            "features": [
+                "Everything in Pro",
+                "Unlimited Music Generation",
+                "Custom AI Models",
+                "White-label Solutions",
+                "24/7 Priority Support"
+            ]
+        }
+    ]
+    return jsonify({"plans": plans})
+
+@app.route('/api/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    """Create Stripe checkout session (placeholder)"""
+    data = request.json or {}
+    plan_id = data.get('planId')
+    
+    if not plan_id:
+        return jsonify({'error': 'Missing planId'}), 400
+    
+    # Placeholder response - in real implementation, create Stripe session
+    return jsonify({
+        'sessionId': f'cs_test_{plan_id}_placeholder',
+        'url': f'https://checkout.stripe.com/pay/cs_test_{plan_id}_placeholder',
+        'message': 'Stripe integration not implemented yet'
+    })
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
