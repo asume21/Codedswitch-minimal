@@ -26,4 +26,4 @@ COPY . /app
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Run the application
-CMD ["rq", "worker", "--with-scheduler", "--url", "$REDIS_URL", "default"]
+CMD python worker.py
