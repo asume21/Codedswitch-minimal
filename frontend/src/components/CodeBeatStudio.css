@@ -245,7 +245,7 @@
 
 .play-btn:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
+  cursor: not-allowed !important;
 }
 
 .generate-btn {
@@ -260,7 +260,28 @@
 
 .generate-btn:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
+  cursor: not-allowed !important;
+}
+
+/* Ensure all interactive elements have proper cursors */
+.play-btn:not(:disabled),
+.generate-btn:not(:disabled),
+.template-btn,
+.tutorial-btn {
+  cursor: pointer !important;
+}
+
+/* Fix any potential cursor blocking */
+.codebeat-studio * {
+  cursor: inherit;
+}
+
+.codebeat-studio button {
+  cursor: pointer !important;
+}
+
+.codebeat-studio button:disabled {
+  cursor: not-allowed !important;
 }
 
 .code-examples {

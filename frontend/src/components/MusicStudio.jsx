@@ -104,20 +104,43 @@ const MusicStudio = () => {
 
   const play = async () => {
     if (playing) return
-    await Tone.start() // Resume AudioContext after user gesture
+    
+    try {
+      // Ensure audio context is started
+      if (Tone.context.state !== 'running') {
+        await Tone.start()
+        console.log('Audio context started')
+      }
 
-    // Clean previous scheduling
-    Tone.Transport.stop()
-    Tone.Transport.cancel()
-    synthsRef.current.forEach(s => s.dispose())
-    synthsRef.current = []
+      // Clean previous scheduling
+      Tone.Transport.stop()
+      Tone.Transport.cancel()
+      synthsRef.current.forEach(s => s.dispose())
+      synthsRef.current = []
 
-    // Create synthesized drum sounds since samples don't exist
-    if (!playersRef.current) {
-      playersRef.current = {
-        kick: new Tone.MembraneSynth().toDestination(),
-        snare: new Tone.NoiseSynth().toDestination(), 
-        hat: new Tone.MetalSynth().toDestination()
+      // Create synthesized drum sounds with better settings
+      if (!playersRef.current) {
+        playersRef.current = {
+          kick: new Tone.MembraneSynth({
+            pitchDecay: 0.05,
+            octaves: 10,
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4 }
+          }).toDestination(),
+          snare: new Tone.NoiseSynth({
+            noise: { type: 'white' },
+            envelope: { attack: 0.005, decay: 0.1, sustain: 0.0 }
+          }).toDestination(), 
+          hat: new Tone.MetalSynth({
+            frequency: 200,
+            envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
+            harmonicity: 5.1,
+            modulationIndex: 32,
+            resonance: 4000,
+            octaves: 1.5
+          }).toDestination()
+        }
+        console.log('Drum synthesizers created')
       }
 
       // Load and schedule loop clips
@@ -135,26 +158,31 @@ const MusicStudio = () => {
       }
     }
 
-    tracks.forEach((track, idx) => {
-      if (idx === 0) {
-        // Kick
-        track.clips.forEach(clip => scheduleClipSample(playersRef.current.kick, clip))
-      } else if (idx === 1) {
-        // Snare
-        track.clips.forEach(clip => scheduleClipSample(playersRef.current.snare, clip))
-      } else if (idx === 2) {
-        // Hi-hat
-        track.clips.forEach(clip => scheduleClipSample(playersRef.current.hat, clip))
-      } else {
-        // Extra tracks fall back to synth tone
-        const synth = new Tone.Synth({ oscillator: { type: 'triangle' } }).toDestination()
-        synthsRef.current.push(synth)
-        track.clips.forEach(clip => scheduleClipSynth(synth, clip))
-      }
-    })
+      tracks.forEach((track, idx) => {
+        if (idx === 0) {
+          // Kick
+          track.clips.forEach(clip => scheduleClipSample(playersRef.current.kick, clip))
+        } else if (idx === 1) {
+          // Snare
+          track.clips.forEach(clip => scheduleClipSample(playersRef.current.snare, clip))
+        } else if (idx === 2) {
+          // Hi-hat
+          track.clips.forEach(clip => scheduleClipSample(playersRef.current.hat, clip))
+        } else {
+          // Extra tracks fall back to synth tone
+          const synth = new Tone.Synth({ oscillator: { type: 'triangle' } }).toDestination()
+          synthsRef.current.push(synth)
+          track.clips.forEach(clip => scheduleClipSynth(synth, clip))
+        }
+      })
 
-    Tone.Transport.start()
-    setPlaying(true)
+      Tone.Transport.start()
+      setPlaying(true)
+      console.log('Playback started')
+    } catch (error) {
+      console.error('Audio playback error:', error)
+      alert('Audio playback failed. Please try again.')
+    }
   }
 
   const stop = () => {
