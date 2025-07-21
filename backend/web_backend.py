@@ -1227,17 +1227,28 @@ def serve_react_app(path):
     # For all other routes, serve the React app's index.html
     # This enables client-side routing (React Router)
     try:
-        # Try to serve static files first (CSS, JS, images)
-        if path and '.' in path and not path.endswith(('.html', '/')):
-            # This is likely a static asset, try to serve it
-            try:
-                return send_from_directory('../frontend/dist', path)
-            except:
-                return jsonify({'error': 'Static file not found'}), 404
+        # Build the path to the frontend dist directory
+        frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist'))
         
-        # For all routes (/, /features, /code-translator, etc.)
-        # Return the React app's index.html
-        return send_from_directory('../frontend/dist', 'index.html')
+        # Handle root path
+        if not path or path == '/':
+            return send_from_directory(frontend_dist, 'index.html')
+            
+        # Try to serve the requested file if it exists
+        file_path = os.path.join(frontend_dist, path)
+        if os.path.isfile(file_path):
+            return send_from_directory(frontend_dist, path)
+            
+        # Try to serve index.html for React Router paths
+        if not os.path.splitext(path)[1]:  # If no file extension
+            return send_from_directory(frontend_dist, 'index.html')
+            
+        # Try to serve static files from the assets directory
+        if '/assets/' in path:
+            return send_from_directory(frontend_dist, path)
+            
+        # Fall back to index.html for React Router
+        return send_from_directory(frontend_dist, 'index.html')
         
     except Exception as e:
         app.logger.error(f'Error serving route {path}: {str(e)}')
