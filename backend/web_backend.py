@@ -236,13 +236,22 @@ mail = Mail(app)
 db.init_app(app)
 
 CORS(app, 
-    origins=[
-        "http://localhost:5173", 
-        "http://localhost:5174", 
-        "https://www.codedswitch.com", 
-        "https://codedswitch.com",
-        "https://codedswitch-frontend.onrender.com"
-    ],
+    resources={
+        r"/*": {
+            "origins": [
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "https://www.codedswitch.com",
+                "https://codedswitch.com",
+                "https://codedswitch-frontend.onrender.com",
+                "https://codedswitch-backend.onrender.com",
+                "https://newnewwebsite.onrender.com"
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+            "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+            "supports_credentials": True
+        }
+    },
     supports_credentials=True,
     allow_headers=[
         "Content-Type", 
