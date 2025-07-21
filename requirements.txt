@@ -11,6 +11,7 @@ rq==1.15.1
 numpy==1.24.3
 soundfile==0.12.1
 pydub==0.25.1
+audiocraft==0.1.5
 gunicorn==21.2.0
 Werkzeug==2.3.7
 itsdangerous==2.1.2

@@ -12,6 +12,9 @@ ENV PYTHONUNBUFFERED 1
 RUN apt-get update && apt-get install -y \
     gcc \
     python3-dev \
+    git \
+    ffmpeg \
+    libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
