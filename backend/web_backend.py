@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import requests
 from flask_mail import Mail, Message
@@ -1199,10 +1199,18 @@ def catch_all_api_options(path):
     response.headers['Access-Control-Expose-Headers'] = 'Content-Type, Authorization'
     return response
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
+@app.route('/', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
+@app.route('/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
 def serve_react_app(path):
     """Serve React app for all non-API routes (SPA routing)"""
+    # Handle OPTIONS method for CORS preflight
+    if request.method == 'OPTIONS':
+        response = jsonify({})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', '*')
+        response.headers.add('Access-Control-Allow-Methods', '*')
+        return response
+    
     # If it's an API route, let Flask handle it normally
     if path.startswith('api/'):
         return jsonify({'error': 'API endpoint not found'}), 404
@@ -1211,33 +1219,19 @@ def serve_react_app(path):
     # This enables client-side routing (React Router)
     try:
         # Try to serve static files first (CSS, JS, images)
-        if '.' in path and not path.endswith('.html'):
-            # This is likely a static asset, return 404 if not found
-            return jsonify({'error': 'Static file not found'}), 404
+        if path and '.' in path and not path.endswith(('.html', '/')):
+            # This is likely a static asset, try to serve it
+            try:
+                return send_from_directory('../frontend/dist', path)
+            except:
+                return jsonify({'error': 'Static file not found'}), 404
         
         # For all routes (/, /features, /code-translator, etc.)
-        # Return a simple HTML that loads the React app
-        return '''
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodedSwitch | AI Coding Platform</title>
-    <script>
-        // Redirect to frontend service for proper React app loading
-        window.location.href = 'https://codedswitch-frontend.onrender.com' + window.location.pathname;
-    </script>
-</head>
-<body>
-    <div id="root">
-        <p>Loading CodedSwitch...</p>
-        <p>If not redirected, <a href="https://codedswitch-frontend.onrender.com">click here</a></p>
-    </div>
-</body>
-</html>
-        '''
+        # Return the React app's index.html
+        return send_from_directory('../frontend/dist', 'index.html')
+        
     except Exception as e:
+        app.logger.error(f'Error serving route {path}: {str(e)}')
         return jsonify({'error': 'Failed to serve app', 'details': str(e)}), 500
 
 
