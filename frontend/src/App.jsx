@@ -4,6 +4,7 @@ import './App.css'
 import ChatBot from './components/ChatBot'
 import AnimatedLogo from './components/AnimatedLogo'
 import FeatureCarousel from './components/FeatureCarousel'
+import SettingsDropdown from './components/SettingsDropdown'
 // lazy loaded below
 
 import Pricing from './components/Pricing'
@@ -223,6 +224,9 @@ function AppContent() {
             >
               Vulnerability Scanner
             </button>
+            <div className="nav-settings">
+              <SettingsDropdown />
+            </div>
           </div>
         </div>
       </nav>
