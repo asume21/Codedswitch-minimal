@@ -50,7 +50,12 @@ Hook: "POV: You're a developer who also makes music"
 [Show the connection between code patterns and musical patterns]
 End: "This is why I built CodedSwitch"
 
-Hashtags: #DeveloperLife #CreativeEscape #CodedSwitch #TechLife #WorkLifeBalance #CreativeCoding
+Hashtags: #DeveloperLife #CreativeEscape 
+
+    
+        
+            
+#CodedSwitch #TechLife #WorkLifeBalance #CreativeCoding
 ```
 
 ### Twitter/X Strategy

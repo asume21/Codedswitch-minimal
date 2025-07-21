@@ -9,6 +9,10 @@ from datetime import datetime
 from api_keys import api_key_manager, require_api_key, create_god_key
 import stripe
 from dotenv import load_dotenv
+import logging
+
+# Configure logging for debug output
+logging.basicConfig(level=logging.DEBUG)
 
 # Load environment variables
 load_dotenv()
@@ -352,7 +356,30 @@ def ai_proxy():
 @app.route('/api/generate', methods=['POST', 'OPTIONS'])
 def generate_proxy():
     '''Generate lyrics using Grok API with usage tracking.'''
-    data = request.json or {}
+    # Enhanced debug logging for troubleshooting
+    logging.debug("[DEBUG] request.data: %s", request.data)
+    logging.debug("[DEBUG] request.json: %s", request.json)
+    logging.debug("[DEBUG] request.headers: %s", dict(request.headers))
+
+    data = request.json
+    if not data:
+        try:
+            data = request.get_json(force=True, silent=True)
+            logging.debug("[DEBUG] request.get_json(force=True, silent=True): %s", data)
+        except Exception as e:
+            logging.debug("[DEBUG] get_json(force=True) exception: %s", str(e))
+            data = None
+    if not data and request.data:
+        try:
+            import json as pyjson
+            data = pyjson.loads(request.data)
+            logging.debug("[DEBUG] Parsed request.data as JSON: %s", data)
+        except Exception as e:
+            logging.debug("[DEBUG] Failed to parse request.data as JSON: %s", str(e))
+            data = {}
+    if not data:
+        data = {}
+
     prompt = data.get('prompt')
     user_id = data.get('userId', 'anonymous')
     max_tokens = data.get('max_tokens', 500)
@@ -364,12 +391,17 @@ def generate_proxy():
     admin_key = data.get('adminKey')
     is_admin = admin_key == os.environ.get('ADMIN_KEY', 'codedswitch_admin_2025')
     
-    # Get current usage (simplified - in real app you'd use a database)
-    # For now, we'll just return success and increment usage
     grok_api_key = os.environ.get('Grok_API_Key')
     if not grok_api_key:
         return jsonify({'error': 'Grok_API_Key environment variable not set'}), 500
     
+    grok_payload = {
+        "model": os.environ.get("DEFAULT_GROK_MODEL", "grok-3-mini"),
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": max_tokens
+    }
+    logging.debug("[DEBUG] Grok API request payload: %s", grok_payload)
+
     try:
         response = requests.post(
             "https://api.x.ai/v1/chat/completions",
@@ -377,16 +409,14 @@ def generate_proxy():
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {grok_api_key}"
             },
-            json={
-                "model": os.environ.get("DEFAULT_GROK_MODEL", "grok-3-mini"),
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": max_tokens
-            },
+            json=grok_payload,
             timeout=60
         )
+        logging.debug("[DEBUG] Grok API raw response: %s", response.text)
         response.raise_for_status()
         result = response.json()
-        content = result['choices'][0]['message']['content']
+        content = result.get('choices', [{}])[0].get('message', {}).get('content', '')
+        logging.debug("[DEBUG] Parsed Grok content: %s", content)
         
         # Return response in format expected by LyricLab
         return jsonify({
@@ -398,8 +428,13 @@ def generate_proxy():
             }
         })
     except Exception as e:
+        logging.debug("[DEBUG] Exception during Grok API call: %s", str(e))
         return jsonify({'error': str(e)}), 500
 
+import logging
+logging.basicConfig(level=logging.DEBUG)
+import logging
+logging.basicConfig(level=logging.DEBUG)
 from flask import send_file, send_from_directory  # type: ignore[reportMissingImports]
 
 # Serve static loop files from backend/loops directory
