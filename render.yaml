@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: codedswitch
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: "./frontend/dist"
+    envVars:
+      - key: NODE_VERSION
+        value: 18.x
+    routes:
+      - type: rewrite
+        source: "/*"
+        destination: "/index.html"
+
+  - type: web
+    name: codedswitch-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn backend.web_backend:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.10"
+      - key: PORT
+        value: 10000
+    healthCheckPath: /api/health

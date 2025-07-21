@@ -1,22 +1,31 @@
 {
-  "name": "frontend",
+  "name": "codedswitch-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build --base=/",
     "preview": "vite preview --host",
-    "deploy": "npm run build && cp _redirects dist/"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.6.0",
-    "vite": "^7.0.0"
+    "deploy": "npm run build && cp public/_redirects dist/"
   },
   "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.3",
-    "tone": "^15.1.22"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.15.0",
+    "tone": "^14.7.77",
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@mui/material": "^5.14.10",
+    "@mui/icons-material": "^5.14.10",
+    "axios": "^1.5.0",
+    "formik": "^2.4.3",
+    "yup": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.0.4",
+    "vite": "^4.4.9"
   }
 }
