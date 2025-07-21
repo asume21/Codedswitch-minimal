@@ -12,12 +12,20 @@ export default defineConfig({
     host: true,
     strictPort: true,
     open: true,
+    cors: true
   },
   build: {
     outDir: 'dist',
+    emptyOutDir: true,
+    sourcemap: true,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
+      },
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
       },
     },
   },
@@ -25,5 +33,6 @@ export default defineConfig({
     port: 5173,
     host: true,
     strictPort: true,
+    cors: true
   },
 })
