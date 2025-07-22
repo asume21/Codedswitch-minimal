@@ -1238,7 +1238,7 @@ def serve_react_app(path):
     if request.method == 'OPTIONS':
         response = jsonify({})
         response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', '*, X-API-Key'))
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-API-Key'))
         response.headers.add('Access-Control-Allow-Methods', '*')
         return response
     
@@ -1276,6 +1276,18 @@ def serve_react_app(path):
         app.logger.error(f'Error serving route {path}: {str(e)}')
         return jsonify({'error': 'Failed to serve app', 'details': str(e)}), 500
 
+
+
+# ===== SPECIAL CORS HANDLER FOR X-API-KEY =====
+@app.route('/api/options-test', methods=['OPTIONS'])
+def special_cors_options_handler():
+    '''Handle CORS preflight requests with explicit X-API-Key support'''
+    response = jsonify({})
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-API-Key'
+    response.headers['Access-Control-Expose-Headers'] = 'Content-Type, Authorization'
+    return response
 
 if __name__ == '__main__':
     with app.app_context():
