@@ -1238,7 +1238,7 @@ def serve_react_app(path):
     if request.method == 'OPTIONS':
         response = jsonify({})
         response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-API-Key'))
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-API-Key')
         response.headers.add('Access-Control-Allow-Methods', '*')
         return response
     
