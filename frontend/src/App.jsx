@@ -5,6 +5,7 @@ import ChatBot from './components/ChatBot'
 import AnimatedLogo from './components/AnimatedLogo'
 import FeatureCarousel from './components/FeatureCarousel'
 import SettingsDropdown from './components/SettingsDropdown'
+import Diagnostics from './components/Diagnostics'
 // lazy loaded below
 
 import Pricing from './components/Pricing'
@@ -224,6 +225,12 @@ function AppContent() {
             >
               Vulnerability Scanner
             </button>
+            <button
+              className={`nav-link ${isActive('/diagnostics') ? 'active' : ''}`}
+              onClick={() => navigate('/diagnostics')}
+            >
+              Diagnostics
+            </button>
             <div className="nav-settings">
               <SettingsDropdown />
             </div>
@@ -285,6 +292,7 @@ function AppContent() {
           <Route path="/admin" element={<AdminPanel />} />
           <Route path="/spessasynth" element={<SpessaSynthEmbed />} />
           <Route path="/success" element={<Success />} />
+          <Route path="/diagnostics" element={<Diagnostics />} />
         </Routes>
       </main>
 
