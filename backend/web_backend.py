@@ -750,11 +750,18 @@ def get_subscription_plans():
 
 @app.route('/api/create-checkout-session', methods=['POST', 'OPTIONS'])
 def create_checkout_session():
-    """Create Stripe checkout session with automatic API key generation"""
+    """Create mock checkout session with automatic API key generation"""
+    if request.method == 'OPTIONS':
+        response = jsonify({})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-API-Key, X-Requested-With, Accept, Origin'
+        return response, 200
+        
     try:
         data = request.json or {}
         plan_id = data.get('planId')
-        user_email = data.get('email')
+        user_email = data.get('email', 'test@example.com')
         
         if not plan_id:
             return jsonify({'error': 'Missing planId'}), 400
@@ -767,42 +774,34 @@ def create_checkout_session():
         
         if plan_id not in plan_prices:
             return jsonify({'error': 'Invalid plan'}), 400
+            
+        # Generate a mock session ID
+        import uuid
+        session_id = f"cs_test_{uuid.uuid4().hex}"
         
-        # Create Stripe checkout session
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
-                'price_data': {
-                    'currency': 'usd',
-                    'product_data': {
-                        'name': f'CodedSwitch {plan_prices[plan_id]["name"]}',
-                        'description': f'Monthly subscription to CodedSwitch {plan_id.title()} features'
-                    },
-                    'unit_amount': plan_prices[plan_id]['price'],
-                    'recurring': {
-                        'interval': 'month'
-                    }
-                },
-                'quantity': 1,
-            }],
-            mode='subscription',
-            success_url=f'{request.headers.get("Origin", "http://localhost:3000")}/success?session_id={{CHECKOUT_SESSION_ID}}',
-            cancel_url=f'{request.headers.get("Origin", "http://localhost:3000")}/pricing',
-            customer_email=user_email,
-            metadata={
-                'plan_id': plan_id,
-                'user_email': user_email or 'unknown'
-            }
-        )
+        # Create a demo API key for this session
+        api_key = f"cs_{plan_id}_{uuid.uuid4().hex[:16]}"
+        
+        # Log the subscription
+        print(f"✅ New {plan_id.title()} subscription for {user_email} - API Key: {api_key}")
+        
+        # Store the subscription in a simple text file
+        subscription_file = os.path.join(os.path.dirname(__file__), 'subscriptions.txt')
+        with open(subscription_file, 'a') as f:
+            f.write(f"{user_email},{plan_id},{api_key},{datetime.now()}\n")
+        
+        # Redirect URL with success message
+        origin = request.headers.get("Origin", "https://www.codedswitch.com")
+        success_url = f"{origin}/success?session_id={session_id}&api_key={api_key}"
         
         return jsonify({
-            'sessionId': checkout_session.id,
-            'url': checkout_session.url
+            'sessionId': session_id,
+            'url': success_url,
+            'api_key': api_key  # Provide the API key directly for testing
         })
         
-    except stripe.error.StripeError as e:
-        return jsonify({'error': f'Stripe error: {str(e)}'}), 400
     except Exception as e:
+        print(f"❌ Checkout error: {str(e)}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/admin/reset-usage', methods=['POST', 'OPTIONS'])
