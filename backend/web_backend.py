@@ -245,10 +245,12 @@ CORS(app,
                 "https://codedswitch.com",
                 "https://codedswitch-frontend.onrender.com",
                 "https://codedswitch-backend.onrender.com",
-                "https://newnewwebsite.onrender.com"
+                "https://newnewwebsite.onrender.com",
+                "https://codedswitch-minimal.netlify.app",
+                "*"  # Allow all origins temporarily for debugging
             ],
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-            "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+            "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "X-API-Key", "Accept", "Origin"],
             "supports_credentials": True
         }
     },
