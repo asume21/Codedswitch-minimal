@@ -1052,7 +1052,11 @@ def validate_key():
     Returns information about the key's validity and associated plan.
     """
     if request.method == 'OPTIONS':
-        return jsonify({}), 200
+        response = jsonify({})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-API-Key'
+        return response, 200
         
     api_key = request.headers.get('X-API-Key') or request.get_json(silent=True).get('apiKey', '') if request.is_json else ''
     
