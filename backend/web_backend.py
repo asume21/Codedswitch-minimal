@@ -649,42 +649,47 @@ def vulnerability_scan():
 
 @app.route('/api/signup', methods=['POST', 'OPTIONS'])
 def signup():
-    data = request.json
+    """Simple email signup handler - file-based storage"""
+    if request.method == 'OPTIONS':
+        response = jsonify({})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-API-Key'
+        return response, 200
+        
+    data = request.json or {}
     email = data.get('email')
     
     if not email or '@' not in email:
         return jsonify({'error': 'Invalid email address'}), 400
     
     try:
+        # Store email in a text file as a simple database
+        email_file = os.path.join(os.path.dirname(__file__), 'newsletter_emails.txt')
+        
         # Check if email already exists
-        existing = EmailSignup.query.filter_by(email=email).first()
+        existing = False
+        if os.path.exists(email_file):
+            with open(email_file, 'r') as f:
+                existing = email in [line.strip() for line in f.readlines()]
+        
         if existing:
             return jsonify({'message': 'Email already signed up'}), 200
+            
+        # Store new signup
+        with open(email_file, 'a') as f:
+            f.write(f"{email}\n")
         
-        # Create new signup
-        signup = EmailSignup(email=email)
-        db.session.add(signup)
-        db.session.commit()
-        
-        # Send professional confirmation email to user
-        send_newsletter_signup_confirmation(email)
-        
-        # Send notification email to admin
-        msg = Message(
-            'New CodedSwitch Newsletter Signup',
-            sender='servicehelp@codedswitch.com',
-            recipients=['servicehelp@codedswitch.com']
-        )
-        msg.body = f"New newsletter signup: {email}\nDate: {datetime.utcnow()}\nTotal signups: {EmailSignup.query.count()}"
-        mail.send(msg)
+        # Simple log instead of email
+        print(f"✅ New newsletter signup: {email} at {datetime.now()}")
         
         return jsonify({
             'message': 'Thank you for signing up!',
             'email': email
         })
     except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Signup error: {str(e)}")
+        return jsonify({'error': 'Unable to process signup. Please try again later.'}), 500
 
 @app.route('/api/test-emails', methods=['GET', 'OPTIONS'])
 def test_emails():
