@@ -367,31 +367,21 @@ def ai_proxy():
 
 @app.route('/api/generate', methods=['POST', 'OPTIONS'])
 def generate_proxy():
-    '''Generate lyrics using Grok API with usage tracking.'''
+    '''Generate lyrics using Grok API or fallback to demo lyrics.'''
+    # Handle OPTIONS requests for CORS
+    if request.method == 'OPTIONS':
+        response = jsonify({})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-API-Key, X-Requested-With, Accept, Origin'
+        return response, 200
+        
     # Enhanced debug logging for troubleshooting
     logging.debug("[DEBUG] request.data: %s", request.data)
     logging.debug("[DEBUG] request.json: %s", request.json)
     logging.debug("[DEBUG] request.headers: %s", dict(request.headers))
 
-    data = request.json
-    if not data:
-        try:
-            data = request.get_json(force=True, silent=True)
-            logging.debug("[DEBUG] request.get_json(force=True, silent=True): %s", data)
-        except Exception as e:
-            logging.debug("[DEBUG] get_json(force=True) exception: %s", str(e))
-            data = None
-    if not data and request.data:
-        try:
-            import json as pyjson
-            data = pyjson.loads(request.data)
-            logging.debug("[DEBUG] Parsed request.data as JSON: %s", data)
-        except Exception as e:
-            logging.debug("[DEBUG] Failed to parse request.data as JSON: %s", str(e))
-            data = {}
-    if not data:
-        data = {}
-
+    data = request.json or {}
     prompt = data.get('prompt')
     user_id = data.get('userId', 'anonymous')
     max_tokens = data.get('max_tokens', 500)
@@ -399,22 +389,71 @@ def generate_proxy():
     if not prompt:
         return jsonify({'error': 'Missing prompt'}), 400
 
-    # Check for admin bypass
-    admin_key = data.get('adminKey')
-    is_admin = admin_key == os.environ.get('ADMIN_KEY', 'codedswitch_admin_2025')
+    # DEMO LYRICS - always available as fallback
+    style = 'boom-bap'
+    topic = 'coding'
     
-    grok_api_key = os.environ.get('Grok_API_Key')
-    if not grok_api_key:
-        return jsonify({'error': 'Grok_API_Key environment variable not set'}), 500
-    
-    grok_payload = {
-        "model": os.environ.get("DEFAULT_GROK_MODEL", "grok-3-mini"),
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": max_tokens
-    }
-    logging.debug("[DEBUG] Grok API request payload: %s", grok_payload)
+    # Extract style and topic from prompt if possible
+    if 'style lyrics about' in prompt:
+        parts = prompt.split('style lyrics about')
+        if len(parts) == 2:
+            style = parts[0].strip().replace('Generate ', '')
+            topic = parts[1].strip()
+            
+    demo_lyrics = f"""
+[Verse 1]
+In the realm of {style}, I drop beats like code
+Debugging life's problems, carrying the mental load
+Writing algorithms for success, no need to reload
+These {topic} rhymes I craft are about to explode
 
+[Chorus]
+Coding all day, coding all night
+These {topic} dreams taking digital flight
+From syntax to beats, everything's right
+My {style} flow is out of sight
+
+[Verse 2]
+Compiling my thoughts into bars that hit hard
+Binary decisions, life gets complicated when you're a bard
+Deploying these verses with a {style} regard
+The {topic} inspiration is my wildcard
+"""
+    
+    # Try to get a real response from Grok API
     try:
+        # Check for API key
+        api_key = request.headers.get('X-API-Key')
+        grok_api_key = api_key or os.environ.get('Grok_API_Key')
+        
+        if not grok_api_key:
+            print("⚠️ No API key available for Grok API, using demo lyrics")
+            return jsonify({
+                "lyrics": demo_lyrics,
+                "response": demo_lyrics,
+                "usage": {
+                    "lyricsGenerated": 1,
+                    "lastReset": datetime.now().strftime("%Y-%m")
+                },
+                "demo": True
+            })
+        
+        # Format proper prompt for better lyrics
+        enhanced_prompt = f"""
+        Generate professional rap lyrics in {style} style about {topic}.
+        Write at least 16 bars (lines) with a chorus section.
+        Include creative wordplay related to {topic}.
+        Format with [Verse 1], [Chorus], [Verse 2] sections.
+        Only return the lyrics, no additional explanation.
+        """
+        
+        grok_payload = {
+            "model": os.environ.get("DEFAULT_GROK_MODEL", "grok-3-mini"),
+            "messages": [{"role": "user", "content": enhanced_prompt}],
+            "max_tokens": max_tokens
+        }
+        
+        print(f"🎵 Generating {style} lyrics about {topic} via Grok API")
         response = requests.post(
             "https://api.x.ai/v1/chat/completions",
             headers={
@@ -424,24 +463,41 @@ def generate_proxy():
             json=grok_payload,
             timeout=60
         )
-        logging.debug("[DEBUG] Grok API raw response: %s", response.text)
-        response.raise_for_status()
+        
+        if not response.ok:
+            print(f"⚠️ Grok API error: {response.status_code} - {response.text}")
+            raise Exception(f"API error: {response.status_code}")
+            
         result = response.json()
         content = result.get('choices', [{}])[0].get('message', {}).get('content', '')
-        logging.debug("[DEBUG] Parsed Grok content: %s", content)
         
-        # Return response in format expected by LyricLab
+        # If no content received, use demo lyrics
+        if not content.strip():
+            print("⚠️ Empty response from Grok API, using demo lyrics")
+            content = demo_lyrics
+        
+        print(f"✅ Successfully generated lyrics via Grok API")
         return jsonify({
             "lyrics": content,
             "response": content,
             "usage": {
-                "lyricsGenerated": 1,  # Simplified usage tracking
-                "lastReset": "2025-07"
+                "lyricsGenerated": 1,
+                "lastReset": datetime.now().strftime("%Y-%m")
             }
         })
+        
     except Exception as e:
-        logging.debug("[DEBUG] Exception during Grok API call: %s", str(e))
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Error generating lyrics: {str(e)}")
+        # On any error, fall back to demo lyrics
+        return jsonify({
+            "lyrics": demo_lyrics,
+            "response": demo_lyrics,
+            "usage": {
+                "lyricsGenerated": 1,
+                "lastReset": datetime.now().strftime("%Y-%m")
+            },
+            "demo": True
+        })
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
