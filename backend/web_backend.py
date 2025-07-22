@@ -1063,9 +1063,9 @@ def validate_key():
     if not api_key:
         return jsonify({'error': 'No API key provided', 'valid': False}), 400
     
-    # Check if this is a God Mode key (simple check - in production, use database lookup)
+    # Check if this is a God Mode key (supports multiple formats)
     god_prefix = os.environ.get('GOD_KEY_PREFIX', 'god_')
-    if api_key.startswith(god_prefix):
+    if api_key.startswith(god_prefix) or 'god_' in api_key or api_key.startswith('cs_god_'):
         # In a real system, validate against stored keys in database
         return jsonify({
             'valid': True,
