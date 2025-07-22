@@ -260,7 +260,8 @@ CORS(app,
         "Authorization", 
         "X-Requested-With", 
         "Accept",
-        "Origin"
+        "Origin",
+        "X-API-Key"
     ],
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     expose_headers=["Content-Type", "Authorization"])
@@ -271,7 +272,7 @@ def after_request(response):
     # CORS headers
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-API-Key'
     response.headers['Access-Control-Expose-Headers'] = 'Content-Type, Authorization'
     
     # Security headers
@@ -301,7 +302,7 @@ def handle_preflight():
         response = jsonify({})
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-API-Key'
         return response
 
 @app.route('/api/user/subscription', methods=['GET', 'OPTIONS'])
@@ -1225,7 +1226,7 @@ def catch_all_api_options(path):
     response = jsonify({})
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-API-Key'
     response.headers['Access-Control-Expose-Headers'] = 'Content-Type, Authorization'
     return response
 
@@ -1237,7 +1238,7 @@ def serve_react_app(path):
     if request.method == 'OPTIONS':
         response = jsonify({})
         response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', '*')
+        response.headers.add('Access-Control-Allow-Headers', '*, X-API-Key'))
         response.headers.add('Access-Control-Allow-Methods', '*')
         return response
     
