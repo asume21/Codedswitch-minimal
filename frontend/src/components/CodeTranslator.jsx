@@ -77,6 +77,7 @@ for (let i = 0; i < 10; i++) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Key': localStorage.getItem('apiKey') || ''
         },
         body: JSON.stringify({
           sourceCode,

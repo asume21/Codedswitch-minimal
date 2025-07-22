@@ -208,8 +208,15 @@ const MusicStudio = () => {
       // Enqueue generation job
       const response = await fetch(`${BACKEND_URL}/api/generate-music`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: fullPrompt, lyrics, duration: 30 })
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': localStorage.getItem('apiKey') || ''
+        },
+        body: JSON.stringify({
+          instrument,
+          prompt,
+          lyrics
+        })
       })
       if (response.status !== 202) {
         const errorText = await response.text()
@@ -220,7 +227,11 @@ const MusicStudio = () => {
       // Poll for generated file
       let musicBlob
       while (true) {
-        const pollRes = await fetch(`${BACKEND_URL}/api/music-file?jobId=${jobId}`)
+        const pollRes = await fetch(`${BACKEND_URL}/api/music-file?jobId=${jobId}`, {
+          headers: {
+            'X-API-Key': localStorage.getItem('apiKey') || ''
+          }
+        })
         if (pollRes.status === 202) {
           await new Promise(r => setTimeout(r, 2000))
           continue

@@ -195,26 +195,57 @@ generate()`);
 
   const generateAIBeat = async () => {
     setIsGenerating(true);
+    setError(''); // Clear previous errors
+    
+    // Create an AbortController to timeout the fetch request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/codebeat-pattern`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-API-Key': localStorage.getItem('api_key') || ''
+        },
         body: JSON.stringify({
           code: code,
           tempo: parsedPattern?.tempo || 120,
           key: parsedPattern?.key || 'C'
-        })
+        }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Server returned ${response.status}: ${errorText}`);
+      }
       
       const data = await response.json();
       if (data.jobId) {
+        let pollAttempts = 0;
+        const maxPollAttempts = 30; // Maximum polling attempts (60 seconds at 2-second intervals)
+        
         // Poll for completion
         const pollInterval = setInterval(async () => {
           try {
-            const statusResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/music-file/${data.jobId}`);
-            const statusData = await statusResponse.json();
+            pollAttempts++;
+            if (pollAttempts >= maxPollAttempts) {
+              clearInterval(pollInterval);
+              setIsGenerating(false);
+              setError('Generation timed out. Please try again.');
+              return;
+            }
             
-            if (statusResponse.ok && statusResponse.headers.get('content-type')?.includes('audio')) {
+            const statusResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/music-file/${data.jobId}`, {
+              headers: { 'X-API-Key': localStorage.getItem('api_key') || '' }
+            });
+            
+            // Check for audio response
+            const contentType = statusResponse.headers.get('content-type');
+            if (statusResponse.ok && contentType?.includes('audio')) {
               // File is ready
               clearInterval(pollInterval);
               setIsGenerating(false);
@@ -225,29 +256,43 @@ generate()`);
               audio.play();
               
               alert('🎵 Your code pattern has been transformed into music! Playing now...');
-            } else if (statusData.status === 'failed') {
+              return;
+            }
+            
+            // If not audio, expect JSON status
+            const statusData = await statusResponse.json();
+            if (statusData.status === 'failed') {
               clearInterval(pollInterval);
               setIsGenerating(false);
-              alert('Generation failed. Please try again.');
+              setError('Generation failed: ' + (statusData.message || 'Unknown error'));
             }
           } catch (pollError) {
             console.error('Polling error:', pollError);
+            // Don't reset generating state here, keep polling until timeout
           }
         }, 2000);
         
-        // Timeout after 2 minutes
+        // Timeout after 60 seconds
         setTimeout(() => {
           clearInterval(pollInterval);
-          if (isGenerating) {
-            setIsGenerating(false);
-            alert('Generation is taking longer than expected. Please check back later.');
-          }
-        }, 120000);
+          setIsGenerating(false);
+          setError('Generation is taking longer than expected. Please check connection settings.');
+        }, 60000);
+      } else {
+        // No job ID in response
+        setIsGenerating(false);
+        setError('Invalid response from server. Please check your API key and connection.');
       }
     } catch (error) {
+      clearTimeout(timeoutId);
       console.error('Generation error:', error);
       setIsGenerating(false);
-      alert('Error generating beat. Please try again.');
+      
+      if (error.name === 'AbortError') {
+        setError('Request timed out. Check if backend URL is correct in settings.');
+      } else {
+        setError(`Error: ${error.message || 'Failed to connect to backend'}`);
+      }
     }
   };
 
@@ -420,9 +465,9 @@ bass.note('G2').play([1, 2.5, 4])`
             </button>
             
             <button
-              className="generate-btn"
+              className={`generate-btn ${isGenerating ? 'generating' : ''}`}
               onClick={generateAIBeat}
-              disabled={isGenerating || !parsedPattern}
+              disabled={isGenerating}
             >
               {isGenerating ? '🎵 Generating...' : '🤖 Generate AI Beat'}
             </button>

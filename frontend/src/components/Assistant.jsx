@@ -12,7 +12,10 @@ const Assistant = () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/ai`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-API-Key': localStorage.getItem('apiKey') || ''
+        },
         body: JSON.stringify({
           prompt,
           provider: import.meta.env.VITE_DEFAULT_AI_PROVIDER

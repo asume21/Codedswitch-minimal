@@ -34,7 +34,10 @@ const ChatBot = ({ startOpen = false, showToggle = true }) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/ai`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-API-Key': localStorage.getItem('apiKey') || ''
+        },
         body: JSON.stringify({
           prompt: userMsg.text,
           provider: import.meta.env.VITE_DEFAULT_AI_PROVIDER

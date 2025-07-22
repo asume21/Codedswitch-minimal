@@ -66,13 +66,17 @@ const LyricLab = ({ userPlan = 'free', onUsageUpdate }) => {
     }
 
     setIsGenerating(true);
+    setGeneratedLyrics(''); // Clear previous lyrics
 
     try {
+      console.log('Sending request to:', `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/generate`);
+      
       // API call to your backend
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Key': localStorage.getItem('api_key') || ''
         },
         body: JSON.stringify({
           prompt: `Generate ${selectedStyle} style lyrics about ${topic}`,
@@ -80,37 +84,59 @@ const LyricLab = ({ userPlan = 'free', onUsageUpdate }) => {
         })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setGeneratedLyrics(data.lyrics || data.response);
-        
-        // Update usage from response
-        if (data.usage) {
-          setUserUsage(data.usage);
-        }
-        
-        if (onUsageUpdate) {
-          onUsageUpdate(data.usage?.lyricsGenerated || 0);
-        }
-      } else if (response.status === 403) {
-        const errorData = await response.json();
-        if (errorData.upgradeRequired) {
-          setShowUpgradeModal(true);
-        } else {
-          throw new Error(errorData.message || 'Failed to generate lyrics');
-        }
+      console.log('Response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Server error: ${response.status} ${errorText || response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Response data:', data);
+      
+      // Handle the lyrics content
+      let lyricsContent = '';
+      
+      if (data.lyrics && typeof data.lyrics === 'string' && data.lyrics.trim()) {
+        lyricsContent = data.lyrics;
+      } else if (data.response && typeof data.response === 'string' && data.response.trim()) {
+        lyricsContent = data.response;
+      } else if (data.content && typeof data.content === 'string' && data.content.trim()) {
+        lyricsContent = data.content;
       } else {
-        throw new Error('Failed to generate lyrics');
+        throw new Error('No lyrics content found in response');
+      }
+      
+      // Set the lyrics with fallback to avoid empty content
+      setGeneratedLyrics(lyricsContent);
+      
+      // Update usage from response
+      if (data.usage) {
+        setUserUsage(data.usage);
+        if (onUsageUpdate) {
+          onUsageUpdate(data.usage.lyricsGenerated || 0);
+        }
+      }
+      
+      // If no content was set, use demo lyrics
+      if (!lyricsContent.trim()) {
+        console.warn('No lyrics content in response, using demo lyrics');
+        generateDemoLyrics();
       }
     } catch (error) {
       console.error('Error generating lyrics:', error);
-      alert(error.message || 'Failed to generate lyrics. Please try again.');
+      alert(`Failed to generate lyrics: ${error.message}. Please try again.`);
+      // Fallback to demo if there was an error
+      generateDemoLyrics();
     }
 
     setIsGenerating(false);
   };
 
+  // Use demo lyrics as fallback when API fails
   const generateDemoLyrics = () => {
+    console.log('Using demo lyrics');
     const demoLyrics = {
       'boom-bap': `[Verse 1]
 Yo, I'm spitting rhymes like a coding machine
