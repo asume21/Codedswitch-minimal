@@ -54,6 +54,52 @@ const LyricLab = ({ userPlan = 'free', onUsageUpdate }) => {
     return userUsage.lyricsGenerated < userSubscription.monthlyLyrics;
   };
 
+  // Helper function to delay for a specified time
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  
+  // Helper function to make a fetch request with retry logic
+  const fetchWithRetry = async (url, options, maxRetries = 3, retryDelay = 1000, timeout = 30000) => {
+    let retries = 0;
+    
+    while (retries < maxRetries) {
+      try {
+        // Create an abort controller for timeout handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        // Add the signal to the options
+        const fetchOptions = {
+          ...options,
+          signal: controller.signal
+        };
+        
+        // Make the fetch request
+        const response = await fetch(url, fetchOptions);
+        
+        // Clear the timeout
+        clearTimeout(timeoutId);
+        
+        return response;
+      } catch (error) {
+        retries++;
+        console.warn(`API request attempt ${retries} failed: ${error.message}`);
+        
+        // If we've reached max retries, throw the error
+        if (retries >= maxRetries) {
+          console.error(`All ${maxRetries} attempts failed for API request`);
+          throw error;
+        }
+        
+        // Otherwise wait and retry
+        console.log(`Retrying in ${retryDelay}ms...`);
+        await delay(retryDelay);
+        
+        // Exponential backoff
+        retryDelay *= 2;
+      }
+    }
+  };
+
   const generateLyrics = async () => {
     if (!topic.trim()) {
       alert('Please enter a topic for your lyrics!');
@@ -69,21 +115,28 @@ const LyricLab = ({ userPlan = 'free', onUsageUpdate }) => {
     setGeneratedLyrics(''); // Clear previous lyrics
 
     try {
-      console.log('Sending request to:', `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/generate`);
+      const apiUrl = `${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/generate`;
+      console.log('Sending request to:', apiUrl);
       
-      // API call to your backend
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/generate`, {
+      // Get API key from localStorage, use empty string if not available
+      const apiKey = localStorage.getItem('apiKey') || '';
+      
+      // Prepare request with enhanced prompt
+      const requestOptions = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': localStorage.getItem('apiKey') || ''
+          'X-API-Key': apiKey
         },
         body: JSON.stringify({
           prompt: `Generate ${selectedStyle} style lyrics about ${topic}`,
-          userId: 'anonymous'
+          userId: 'anonymous',
+          max_tokens: 500  // Ensure enough tokens for quality lyrics
         })
-      });
-
+      };
+      
+      // Make API call with retry logic
+      const response = await fetchWithRetry(apiUrl, requestOptions, 3, 1000, 30000);
       console.log('Response status:', response.status);
       
       if (!response.ok) {
@@ -92,26 +145,42 @@ const LyricLab = ({ userPlan = 'free', onUsageUpdate }) => {
         throw new Error(`Server error: ${response.status} ${errorText || response.statusText}`);
       }
 
-      const data = await response.json();
-      console.log('Response data:', data);
+      // Parse the response data safely
+      let data;
+      try {
+        data = await response.json();
+        console.log('Response data:', data);
+      } catch (jsonError) {
+        console.error('Error parsing JSON response:', jsonError);
+        throw new Error('Invalid response format from server');
+      }
       
-      // Handle the lyrics content
+      // Handle the lyrics content with multiple fallback options
       let lyricsContent = '';
       
+      // Try all possible response formats in order of preference
       if (data.lyrics && typeof data.lyrics === 'string' && data.lyrics.trim()) {
         lyricsContent = data.lyrics;
       } else if (data.response && typeof data.response === 'string' && data.response.trim()) {
         lyricsContent = data.response;
       } else if (data.content && typeof data.content === 'string' && data.content.trim()) {
         lyricsContent = data.content;
+      } else if (data.choices && data.choices[0]?.message?.content) {
+        // Handle direct Grok API format
+        lyricsContent = data.choices[0].message.content;
+      } else if (typeof data === 'string' && data.trim()) {
+        // Handle plain string response
+        lyricsContent = data;
       } else {
+        // No usable content found in any format
+        console.warn('No lyrics content found in any expected format');
         throw new Error('No lyrics content found in response');
       }
       
       // Set the lyrics with fallback to avoid empty content
       setGeneratedLyrics(lyricsContent);
       
-      // Update usage from response
+      // Update usage from response if available
       if (data.usage) {
         setUserUsage(data.usage);
         if (onUsageUpdate) {
@@ -119,19 +188,29 @@ const LyricLab = ({ userPlan = 'free', onUsageUpdate }) => {
         }
       }
       
-      // If no content was set, use demo lyrics
+      // If after all parsing we still have no content, use demo lyrics
       if (!lyricsContent.trim()) {
-        console.warn('No lyrics content in response, using demo lyrics');
+        console.warn('Empty lyrics content after parsing, using demo lyrics');
         generateDemoLyrics();
       }
     } catch (error) {
       console.error('Error generating lyrics:', error);
-      alert(`Failed to generate lyrics: ${error.message}. Please try again.`);
-      // Fallback to demo if there was an error
+      
+      // Don't show alert for network errors, just quietly fall back
+      if (!error.message.includes('Failed to fetch') && 
+          !error.message.includes('NetworkError') && 
+          !error.message.includes('network') &&
+          !error.message.includes('abort')) {
+        alert(`Failed to generate lyrics: ${error.message}. Using fallback lyrics instead.`);
+      } else {
+        console.warn('Network error occurred, falling back to demo lyrics without alert');
+      }
+      
+      // Always fall back to demo lyrics on any error
       generateDemoLyrics();
+    } finally {
+      setIsGenerating(false);
     }
-
-    setIsGenerating(false);
   };
 
   // Use demo lyrics as fallback when API fails
