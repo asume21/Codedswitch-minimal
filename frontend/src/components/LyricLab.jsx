@@ -76,7 +76,7 @@ const LyricLab = ({ userPlan = 'free', onUsageUpdate }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': localStorage.getItem('api_key') || ''
+          'X-API-Key': localStorage.getItem('apiKey') || ''
         },
         body: JSON.stringify({
           prompt: `Generate ${selectedStyle} style lyrics about ${topic}`,
