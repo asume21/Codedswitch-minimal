@@ -730,8 +730,7 @@ const BeatStudio = () => {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-const BeatStudio_Component = BeatStudio;
-export default BeatStudio_Component;
+export { BeatStudio as default };

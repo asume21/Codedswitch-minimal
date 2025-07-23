@@ -1136,8 +1136,7 @@ const MusicStudio = () => {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-const MusicStudio_Component = MusicStudio;
-export default MusicStudio_Component;
+export { MusicStudio as default };
