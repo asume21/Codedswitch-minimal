@@ -10,18 +10,21 @@
     "deploy": "npm run build"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.15.0",
-    "tone": "^14.7.77",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
-    "@mui/material": "^5.14.10",
+    "@fortawesome/fontawesome-svg-core": "^7.0.0",
+    "@fortawesome/free-solid-svg-icons": "^7.0.0",
+    "@fortawesome/react-fontawesome": "^0.2.3",
     "@mui/icons-material": "^5.14.10",
+    "@mui/material": "^5.14.10",
     "axios": "^1.5.0",
     "formik": "^2.4.3",
-    "yup": "^1.2.0",
-    "react-icons": "^4.11.0"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.11.0",
+    "react-router-dom": "^6.15.0",
+    "tone": "^14.7.77",
+    "yup": "^1.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",

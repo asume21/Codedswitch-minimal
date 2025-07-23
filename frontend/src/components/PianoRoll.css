@@ -1,0 +1,374 @@
+.piano-roll-container {
+  display: flex;
+  flex-direction: column;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: #ddd;
+  height: 100%;
+  width: 100%;
+  min-height: 600px;
+}
+
+.piano-roll-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #222;
+  border-bottom: 1px solid #333;
+  height: 60px;
+  box-sizing: border-box;
+}
+
+.piano-roll-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #eee;
+  flex: 0 0 auto;
+}
+
+.piano-roll-settings {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.setting-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border-right: 1px solid #444;
+}
+
+.setting-group:last-child {
+  border-right: none;
+}
+
+.setting-group label {
+  font-size: 12px;
+  color: #999;
+  margin-right: 5px;
+}
+
+.bpm-input, .time-sig-select, .grid-res-select {
+  background-color: #333;
+  border: 1px solid #555;
+  color: #ddd;
+  border-radius: 3px;
+  padding: 3px 6px;
+  width: 60px;
+  font-size: 13px;
+}
+
+.time-sig-select, .grid-res-select {
+  width: 55px;
+  cursor: pointer;
+}
+
+.bpm-input:focus, .time-sig-select:focus, .grid-res-select:focus {
+  outline: none;
+  border-color: #66aaff;
+}
+
+.current-octave {
+  padding: 5px 10px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  font-size: 13px;
+  color: #ddd;
+  min-width: 40px;
+  text-align: center;
+}
+
+.octave-btn {
+  padding: 5px 8px !important;
+  font-size: 12px !important;
+}
+
+.piano-roll-wrapper {
+  display: flex;
+  height: 450px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 0 0 0 0;
+  border-top: 1px solid #444;
+  border-bottom: 1px solid #444;
+}
+
+.piano-keys {
+  flex-shrink: 0;
+  width: 60px;
+  overflow-y: auto;
+  background-color: #222;
+  position: relative;
+  z-index: 2;
+  border-right: 1px solid #333;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.piano-key {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #333;
+  box-sizing: border-box;
+}
+
+.white-key {
+  background-color: #2d2d2d;
+  color: #aaa;
+  border-left: 2px solid #4a4a4a;
+}
+
+.black-key {
+  background-color: #161616;
+  color: #888;
+  border-left: 2px solid #333;
+}
+
+.c-note {
+  border-top: 1px solid #444;
+}
+
+.note-label {
+  font-size: 10px;
+  padding-left: 5px;
+  user-select: none;
+  opacity: 0.8;
+}
+
+.piano-grid {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+  background-color: #181818;
+  height: 100%;
+  background-image: linear-gradient(to right, rgba(40, 40, 40, 0.05) 1px, transparent 1px);
+  background-size: 25px 100%;
+}
+
+.grid-line {
+  position: absolute;
+  z-index: 1;
+}
+
+.grid-line.horizontal {
+  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.grid-line.vertical {
+  height: 100%;
+  width: 1px;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.grid-line.beat-line {
+  background-color: rgba(255, 255, 255, 0.1);
+  width: 1px;
+}
+
+.grid-line.bar-line {
+  background-color: rgba(255, 255, 255, 0.2);
+  width: 2px;
+}
+
+.grid-line.octave-line {
+  border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+
+.note {
+  position: absolute;
+  background: linear-gradient(to bottom, #5b6af9, #4b56d9);
+  border-radius: 3px;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  padding-left: 5px;
+  overflow: hidden;
+  cursor: move;
+  border-left: 2px solid rgba(255, 255, 255, 0.5);
+  box-sizing: border-box;
+}
+
+.note.selected {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
+  z-index: 11;
+  border-left: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+.note-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.8);
+  user-select: none;
+  pointer-events: none;
+}
+
+.note-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.1));
+}
+
+.note-delete {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  font-size: 12px;
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+
+.note:hover .note-delete {
+  opacity: 1;
+}
+
+.note-delete:hover {
+  background: rgba(255, 50, 50, 0.8);
+}
+
+.piano-roll-container button {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ddd;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.piano-roll-container button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.piano-roll-container button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Timeline ruler styles */
+.timeline-ruler {
+  display: flex;
+  background-color: #222;
+  border-bottom: 1px solid #333;
+  height: 25px;
+  position: relative;
+}
+
+.measure-marker {
+  width: 100px; /* 4 beats * 25px */
+  position: relative;
+  border-right: 2px solid #444;
+  flex-shrink: 0;
+}
+
+.measure-number {
+  position: absolute;
+  left: 5px;
+  top: 5px;
+  font-size: 11px;
+  color: #999;
+}
+
+/* Playhead */
+.playhead {
+  position: absolute;
+  width: 2px;
+  background-color: #ff5252;
+  height: 100%;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 0 5px rgba(255, 82, 82, 0.7);
+}
+
+/* Transport controls */
+.transport-controls {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #222;
+  border-top: 1px solid #333;
+  justify-content: space-between;
+}
+
+.transport-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.transport-button {
+  height: 32px;
+  padding: 0 12px !important;
+}
+
+.transport-button.active {
+  background-color: #3d3d3d;
+}
+
+.transport-button.recording {
+  background-color: rgba(255, 60, 60, 0.6);
+}
+
+.btn-label {
+  margin-left: 4px;
+}
+
+.transport-position {
+  background-color: #333;
+  padding: 5px 10px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 14px;
+  color: #eee;
+  min-width: 100px;
+  text-align: center;
+}
+
+.transport-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.auto-scroll-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #aaa;
+  cursor: pointer;
+}
+
+.auto-scroll-label input {
+  margin: 0;
+}
+
+/* Note label improvements */
+.note-label.small {
+  font-size: 8px;
+  opacity: 0.6;
+}
