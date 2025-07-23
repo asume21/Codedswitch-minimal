@@ -733,4 +733,5 @@ const BeatStudio = () => {
   )
 }
 
-export default BeatStudio
+const BeatStudio_Component = BeatStudio;
+export default BeatStudio_Component;

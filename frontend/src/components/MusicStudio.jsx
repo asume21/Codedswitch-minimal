@@ -1139,4 +1139,5 @@ const MusicStudio = () => {
   )
 }
 
-export default MusicStudio
+const MusicStudio_Component = MusicStudio;
+export default MusicStudio_Component;
