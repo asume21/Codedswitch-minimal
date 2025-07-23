@@ -355,3 +355,380 @@
   padding-top: 100px;
   pointer-events: none;
 }
+/* Enhanced Professional Sequencer Styles */
+.sequencer {
+  margin: 3rem auto;
+  max-width: 1200px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.sequencer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.sequencer-header h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #fff;
+}
+
+.timeline-markers {
+  position: absolute;
+  top: 100%;
+  left: 200px;
+  right: 0;
+  height: 25px;
+  pointer-events: none;
+}
+
+.timeline-marker {
+  position: absolute;
+  font-size: 0.75rem;
+  color: #888;
+  transform: translateX(-50%);
+}
+
+.tracks-container {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  overflow-x: auto;
+  min-height: 400px;
+}
+
+.track {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  min-height: 80px;
+}
+
+.track:last-child {
+  border-bottom: none;
+}
+
+.track-header {
+  width: 200px;
+  min-width: 200px;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.track-info h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1rem;
+  color: #fff;
+}
+
+.track-type {
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.track-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.control-btn, .mute-btn, .add-clip-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.control-btn:hover, .mute-btn:hover, .add-clip-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.control-btn.active {
+  background: #1db954;
+}
+
+.mute-btn.muted {
+  background: rgba(255, 59, 48, 0.3);
+  color: #ff3b30;
+}
+
+.track-content {
+  flex: 1;
+  position: relative;
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0px,
+    transparent 24px,
+    rgba(255, 255, 255, 0.05) 24px,
+    rgba(255, 255, 255, 0.05) 25px
+  );
+}
+
+.grid-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.grid-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sequencer-clip {
+  position: absolute;
+  top: 10px;
+  height: 60px;
+  min-width: 80px;
+  border-radius: 6px;
+  cursor: grab;
+  user-select: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.sequencer-clip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.sequencer-clip:active {
+  cursor: grabbing;
+}
+
+.sequencer-clip.selected {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+  z-index: 10;
+}
+
+.clip-content {
+  padding: 8px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.clip-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.loop-indicator {
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+.remove-clip-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  pointer-events: auto;
+}
+
+.sequencer-clip:hover .remove-clip-btn {
+  opacity: 1;
+}
+
+.remove-clip-btn:hover {
+  background: rgba(255, 59, 48, 0.8);
+}
+
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #ff0000, #ff6b6b);
+  box-shadow: 0 0 4px rgba(255, 0, 0, 0.5);
+  z-index: 20;
+  pointer-events: none;
+}
+
+.playhead::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 10px;
+  height: 8px;
+  background: #ff0000;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+/* Control Groups */
+.control-group {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.playback-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.transport-info {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+}
+
+.generation-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.generate-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.generate-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.generate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.style-selector, .bpm-slider {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.bpm-slider {
+  width: 150px;
+}
+
+.audio-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.download-btn, .add-to-sequencer-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.download-btn {
+  background: #1db954;
+  color: white;
+}
+
+.download-btn:hover {
+  background: #1ed760;
+  transform: translateY(-1px);
+}
+
+.add-to-sequencer-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.add-to-sequencer-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .control-group {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .track-header {
+    width: 150px;
+    min-width: 150px;
+  }
+  
+  .sequencer {
+    padding: 1rem;
+  }
+  
+  .timeline-markers {
+    left: 150px;
+  }
+}
