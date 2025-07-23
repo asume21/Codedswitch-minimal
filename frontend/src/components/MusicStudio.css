@@ -10,14 +10,65 @@
 
 .studio-description {
   font-size: 1.2rem;
-  max-width: 600px;
+  max-width: 800px;
   margin: 0 auto 2rem;
   color: #eee;
 }
 
+/* Main controls */
+.studio-controls {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.controls-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
 .studio-toolbar {
-  margin-bottom: 1.5rem;
-  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.control-group label {
+  font-weight: 600;
+  color: #ddd;
+}
+
+.control-group select,
+.control-group input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 0.4rem;
+  border-radius: 4px;
+}
+
+.bpm-input {
+  width: 60px;
+  text-align: center;
+}
+
+.track-controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .add-btn {
@@ -32,14 +83,194 @@
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.add-btn:hover {
+.play-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.stop-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-btn:hover,
+.play-btn:hover,
+.stop-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
 
+.add-btn:disabled,
+.play-btn:disabled,
+.stop-btn:disabled,
+.pattern-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Melody Pattern Controls */
+.melody-controls {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  text-align: left;
+}
+
+.melody-controls h3 {
+  margin-top: 0;
+  font-size: 1.2rem;
+  color: #ddd;
+}
+
+.pattern-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.selected-track {
+  padding: 0.4rem 0.8rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #ddd;
+}
+
+.track-type {
+  color: #aaa;
+  font-style: italic;
+}
+
+.pattern-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pattern-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+/* Generation Controls */
+.generation-controls {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  text-align: left;
+}
+
+.generation-controls h3 {
+  margin-top: 0;
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.generation-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.generation-inputs label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: #ddd;
+}
+
+.generation-inputs select,
+.generation-inputs input,
+.generation-inputs textarea {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 0.6rem;
+  border-radius: 4px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.generation-inputs textarea {
+  height: 100px;
+}
+
+.generate-btn {
+  background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+  color: #fff;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 1rem;
+}
+
+.generate-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+
+.audio-player {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.audio-player audio {
+  width: 100%;
+  max-width: 500px;
+}
+
+.download-link {
+  color: #60a5fa;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.download-link:hover {
+  text-decoration: underline;
+}
+
+/* Timeline */
 .timeline-wrapper {
   overflow-x: auto;
   padding-bottom: 1rem;
+  margin-top: 2rem;
 }
 
 .timeline {
@@ -51,23 +282,59 @@
   display: flex;
   align-items: center;
   margin-bottom: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.track-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.track-row.selected-track {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
 }
 
 .track-label {
-  width: 100px;
-  text-align: right;
-  padding-right: 1rem;
-  color: #ddd;
+  width: 150px;
+  text-align: left;
+  padding: 0.5rem 1rem;
+  color: #fff;
   font-weight: 600;
+  border-radius: 8px 0 0 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 60px;
+}
+
+.track-label .track-controls {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.track-btn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.track-btn:hover {
+  opacity: 1;
 }
 
 .track-content {
   position: relative;
   flex: 1;
   height: 60px;
-  background: rgba(255,255,255,0.05);
-  border: 1px dashed rgba(255,255,255,0.15);
-  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 0 8px 8px 0;
 }
 
 .clip {
@@ -77,10 +344,18 @@
   border-radius: 6px;
   cursor: grab;
   transition: box-shadow 0.2s;
+  overflow: hidden;
 }
 
 .clip.dragging {
   opacity: 0.8;
   cursor: grabbing;
   box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  z-index: 10;
+}
+
+.melodic-clip {
+  background-image: linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px);
+  background-size: 20px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
