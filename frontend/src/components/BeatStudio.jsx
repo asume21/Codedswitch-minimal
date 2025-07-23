@@ -731,6 +731,6 @@ const BeatStudio = () => {
       </div>
     </div>
   )
-}
+};
 
-export default BeatStudio
+export default BeatStudio;
