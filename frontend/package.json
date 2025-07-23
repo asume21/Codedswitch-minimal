@@ -20,7 +20,8 @@
     "@mui/icons-material": "^5.14.10",
     "axios": "^1.5.0",
     "formik": "^2.4.3",
-    "yup": "^1.2.0"
+    "yup": "^1.2.0",
+    "react-icons": "^4.11.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",
