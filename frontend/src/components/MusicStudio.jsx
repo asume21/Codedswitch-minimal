@@ -2,7 +2,10 @@ import React, { useState, useRef, useEffect } from 'react'
 import * as Tone from 'tone'
 import LoopBrowser from './LoopBrowser'
 import './MusicStudio.css'
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000';
+import { FaPlay, FaPause, FaStop, FaTrash, FaPlus, FaVolumeUp, FaVolumeMute } from 'react-icons/fa'
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://newnewwebsite.onrender.com'
+const DIRECT_FILE_ACCESS = true
 
 // Generate a new empty track object
 const createTrack = () => ({ id: Date.now() + Math.random(), clips: [] })
@@ -24,6 +27,10 @@ const MusicStudio = () => {
   const [loopClips, setLoopClips] = useState([]) // {id, bpm, filename, start, length}
   const [dragging, setDragging] = useState(null) // {trackIdx, clipIdx, offsetX}
   const [playing, setPlaying] = useState(false)
+  const [paused, setPaused] = useState(false)
+  const [transportTime, setTransportTime] = useState(0)
+  const [errorMessage, setErrorMessage] = useState('')
+  const transportTimeRef = useRef(0)
   const [instrument, setInstrument] = useState('Piano')
   const [prompt, setPrompt] = useState('')
   const [lyrics, setLyrics] = useState(localStorage.getItem('generatedLyrics') || '')
@@ -103,6 +110,22 @@ const MusicStudio = () => {
   }
 
   const play = async () => {
+    if (playing && !paused) {
+      // Pause
+      transportTimeRef.current = Tone.Transport.seconds
+      Tone.Transport.pause()
+      setPaused(true)
+      return
+    }
+    
+    if (paused) {
+      // Resume
+      Tone.Transport.start()
+      setPaused(false)
+      setPlaying(true)
+      return
+    }
+    
     if (playing) return
     
     try {
@@ -266,10 +289,33 @@ const MusicStudio = () => {
         Arrange tracks, add clips with a double-click, and drag to reposition. Now add loops below!
       </p>
 
+      {errorMessage && (
+        <div className="error-message">
+          {errorMessage}
+        </div>
+      )}
+
       <div className="studio-toolbar">
-        <button className="add-btn" onClick={addTrack}>+ Track</button>
-        <button className="play-btn" onClick={play} disabled={playing}>▶ Play</button>
-        <button className="stop-btn" onClick={stop} disabled={!playing}>■ Stop</button>
+        <button className="add-btn" onClick={addTrack}><FaPlus /> Track</button>
+        <div className="playback-controls">
+          <button 
+            className={`control-btn ${playing && !paused ? 'active' : ''}`}
+            onClick={play}
+            title={playing && !paused ? 'Pause' : paused ? 'Resume' : 'Play'}
+          >
+            {playing && !paused ? <FaPause /> : <FaPlay />}
+          </button>
+          <button 
+            className="control-btn"
+            onClick={stop}
+            title="Stop"
+          >
+            <FaStop />
+          </button>
+          <div className="transport-info">
+            {Math.floor(transportTime / 60)}:{String(Math.floor(transportTime % 60)).padStart(2, '0')}
+          </div>
+        </div>
       </div>
 
       <div className="generation-controls">

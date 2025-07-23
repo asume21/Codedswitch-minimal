@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import * as Tone from 'tone';
 import './CodeBeatStudio.css';
+import { FaPlay, FaPause, FaStop, FaDownload, FaCode, FaMusic } from 'react-icons/fa';
 
 const CodeBeatStudio = () => {
   const [code, setCode] = useState(`// Welcome to CodeBeat Studio! 🎵
@@ -461,7 +462,7 @@ bass.note('G2').play([1, 2.5, 4])`
               onClick={playPattern}
               disabled={!parsedPattern || isPlaying}
             >
-              {isPlaying ? '⏸️ Playing...' : '▶️ Play Pattern'}
+              {isPlaying ? <><FaPause /> Playing...</> : <><FaPlay /> Play Pattern</>}
             </button>
             
             <button
@@ -469,7 +470,7 @@ bass.note('G2').play([1, 2.5, 4])`
               onClick={generateAIBeat}
               disabled={isGenerating}
             >
-              {isGenerating ? '🎵 Generating...' : '🤖 Generate AI Beat'}
+              {isGenerating ? <><FaMusic /> Generating...</> : <><FaCode /> Generate AI Beat</>}
             </button>
           </div>
         </div>
