@@ -15,6 +15,24 @@
   color: #eee;
 }
 
+/* Error message styling */
+.error-message {
+  background-color: rgba(255, 59, 48, 0.2);
+  color: #ff3b30;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  margin: 0 auto 1.5rem;
+  max-width: 600px;
+  font-size: 0.95rem;
+  text-align: center;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .beat-controls {
   display: flex;
   flex-direction: column;
@@ -33,6 +51,18 @@
 .beat-controls select,
 .beat-controls input[type="range"] {
   width: 220px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #2c2c2e;
+  border: 1px solid #3a3a3c;
+  color: white;
+}
+
+/* Playback controls styling */
+.playback-controls {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 1rem;
 }
 
 .preview-note {
@@ -48,22 +78,47 @@
   color: #aaa;
 }
 
-/* Sequencer Styles */
+/* Pad Grid Styles */
 .pad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
+  gap: 0.75rem;
   margin: 1rem auto;
   max-width: 600px;
 }
 
 .pad {
-  padding: 1rem;
-  background-color: #444;
+  padding: 1.2rem 0.8rem;
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.pad-active {
+  background-color: #1db954;
+}
+
+.pad-empty {
+  background-color: #444;
+  border: 1px dashed #666;
+}
+
+.pad:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.pad:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 .pad:disabled {
@@ -71,6 +126,64 @@
   cursor: not-allowed;
 }
 
+/* Audio player styles */
+.audio-player {
+  margin: 2rem auto;
+  max-width: 600px;
+  padding: 1.5rem;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.audio-player h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.audio-player audio {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.audio-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.download-link {
+  padding: 0.6rem 1.2rem;
+  background-color: #1db954;
+  color: white;
+  text-decoration: none;
+  border-radius: 30px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.download-link:hover {
+  background-color: #1ed760;
+}
+
+.audio-btn {
+  padding: 0.6rem 1.2rem;
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.audio-btn:hover {
+  background-color: #444;
+}
+
+/* Enhanced sequencer styles */
 .playhead-marker {
   position: absolute;
   top: 0;
@@ -78,28 +191,167 @@
   width: 2px;
   background-color: #ff0000;
   pointer-events: none;
+  z-index: 10;
 }
 
-/* Sequencer Styles */
-.sequencer {
-  margin-top: 2rem;
+.enhanced-sequencer {
+  margin-top: 3rem;
+  margin-bottom: 2rem;
+}
+
+.sequencer-title {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.track-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  padding-left: 1rem;
+}
+
+.track-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 60px;
+  width: 150px;
+}
+
+.track-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.mute-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.2rem;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.mute-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.mute-btn.muted {
+  opacity: 0.5;
 }
 
 .sequencer-grid {
   position: relative;
   width: 100%;
-  height: 200px;
-  background: rgba(255,255,255,0.1);
-  border: 2px solid rgba(255,255,255,0.5);
+  min-height: 240px;
+  background: rgba(255,255,255,0.05);
+  border: 2px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
   overflow-x: auto;
   margin: 0 auto;
   box-sizing: border-box;
-  padding: 1rem;
+  padding: 2rem 1rem 1rem;
+}
+
+.timeline-markers {
+  position: absolute;
+  top: 0.5rem;
+  left: 0;
+  right: 0;
+  height: 20px;
+  pointer-events: none;
+}
+
+.timeline-marker {
+  position: absolute;
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.track-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.track-row.track-muted {
+  opacity: 0.6;
+}
+
+.sequencer-clip {
+  position: absolute;
+  background-color: #1db954;
+  color: white;
+  border-radius: 4px;
+}
+
+.sequencer-clip.drums {
+  background-color: #7c4dff;
+}
+
+.sequencer-clip.bass {
+  background-color: #2196f3;
+}
+
+.sequencer-clip.melody {
+  background-color: #ff9800;
+}
+
+.sequencer-clip.selected {
+  outline: 2px solid white;
+  z-index: 5;
+}
+
+.clip-content {
+  font-size: 0.8rem;
+  padding: 4px;
+  pointer-events: none;
+}
+
+.loop-indicator {
+  font-size: 0.7rem;
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+.remove-clip {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border: none;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.sequencer-clip:hover .remove-clip {
+  opacity: 1;
 }
 
 .sequencer-placeholder {
-  color: #ccc;
+  color: #aaa;
   font-style: italic;
   text-align: center;
-  line-height: 180px;
+  padding-top: 100px;
+  pointer-events: none;
 }
