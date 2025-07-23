@@ -1137,6 +1137,6 @@ const MusicStudio = () => {
       </div>
     </div>
   )
-};
+}
 
-export default MusicStudio;
+export default MusicStudio
