@@ -1,7 +1,6 @@
 import React from 'react';
 import './PianoRoll.css';
-import { AdvancedControls, TransportControls, PianoKeys, ChordProgressionGenerator } from './index';
-import usePianoRollLogic from './usePianoRollLogic';
+import { AdvancedControls, TransportControls, PianoKeys, ChordProgressionGenerator, usePianoRollLogic } from './index';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus } from '@fortawesome/free-solid-svg-icons';
 

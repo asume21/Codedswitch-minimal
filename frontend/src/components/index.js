@@ -3,3 +3,4 @@ export { default as AdvancedControls } from './AdvancedControls.jsx';
 export { default as TransportControls } from './TransportControls.jsx';
 export { default as PianoKeys } from './PianoKeys.jsx';
 export { default as ChordProgressionGenerator } from './ChordProgressionGenerator.jsx';
+export { default as usePianoRollLogic } from './usePianoRollLogic.js';
