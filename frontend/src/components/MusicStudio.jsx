@@ -38,7 +38,7 @@ const MusicStudio = () => {
   const [lyrics, setLyrics] = useState(localStorage.getItem('generatedLyrics') || '')
   const [generating, setGenerating] = useState(false)
   const [audioUrl, setAudioUrl] = useState(null)
-  const [showPianoRoll, setShowPianoRoll] = useState(false)
+  const [showPianoRoll, setShowPianoRoll] = useState(true)
   const [selectedClip, setSelectedClip] = useState(null) // {trackIdx, clipIdx}
   const [pianoRollNotes, setPianoRollNotes] = useState([])
   const timelineWidth = 1200 // px
@@ -463,7 +463,7 @@ const MusicStudio = () => {
     <div className="studio-page">
       <h1 className="studio-title">🎵 Music Studio</h1>
       <p className="studio-description">
-        Arrange tracks, add clips with a double-click, and drag to reposition. Now add loops below!
+        <strong>Quick Start:</strong> Use the Piano Roll below to create music! Click and drag to add notes, or switch to Sequencer view to arrange clips.
       </p>
 
       {errorMessage && (
@@ -474,22 +474,16 @@ const MusicStudio = () => {
 
       <div className="studio-toolbar">
         <button className="add-btn" onClick={addTrack}><FaPlus /> Track</button>
-        <div className="view-controls">
-          <button 
-            className={`view-btn ${!showPianoRoll ? 'active' : ''}`} 
-            onClick={() => setShowPianoRoll(false)}
-            title="Sequencer View"
+        <div className="mode-selector">
+          <label>Mode:</label>
+          <select 
+            value={showPianoRoll ? 'piano' : 'sequencer'} 
+            onChange={(e) => setShowPianoRoll(e.target.value === 'piano')}
+            className="mode-dropdown"
           >
-            <FaMusic /> Sequencer
-          </button>
-          <button 
-            className={`view-btn ${showPianoRoll ? 'active' : ''}`} 
-            onClick={() => selectedClip && setShowPianoRoll(true)}
-            disabled={!selectedClip}
-            title="Piano Roll View"
-          >
-            <MdPiano /> Piano Roll
-          </button>
+            <option value="piano">🎹 Piano Roll - Create melodies note by note</option>
+            <option value="sequencer">🎵 Sequencer - Arrange clips and tracks</option>
+          </select>
         </div>
         <div className="playback-controls">
           <button 
@@ -567,6 +561,11 @@ const MusicStudio = () => {
                   data-type="track-content"
                   onDoubleClick={e => handleTrackDoubleClick(e, tIdx)}
                 >
+                  {track.clips.length === 0 && (
+                    <div className="track-placeholder">
+                      Double-click here to create a clip
+                    </div>
+                  )}
                   {track.clips.map((clip, cIdx) => (
                     <div
                       key={clip.id}
@@ -586,10 +585,10 @@ const MusicStudio = () => {
             ))}
           </div>
         </div>
-      ) : selectedClip ? (
+      ) : (
         <div className="piano-roll-container">
           <div className="piano-roll-header">
-            <h3>Editing: Track {selectedClip.trackIdx + 1}, Clip {selectedClip.clipIdx + 1}</h3>
+            <h3>🎹 Piano Roll Editor {selectedClip ? `- Editing Track ${selectedClip.trackIdx + 1}, Clip ${selectedClip.clipIdx + 1}` : '- Create Music!'}</h3>
             <button 
               className="back-btn"
               onClick={() => setShowPianoRoll(false)}
@@ -603,16 +602,6 @@ const MusicStudio = () => {
             width={timelineWidth - 100}
             height={500}
           />
-        </div>
-      ) : (
-        <div className="piano-roll-message">
-          <p>Please select a clip to edit in the piano roll.</p>
-          <button 
-            className="back-btn"
-            onClick={() => setShowPianoRoll(false)}
-          >
-            Back to Sequencer
-          </button>
         </div>
       )}
     </div>

@@ -38,6 +38,49 @@
   gap: 1rem;
   flex-wrap: wrap;
   margin-bottom: 1rem;
+  justify-content: space-between;
+}
+
+.mode-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mode-selector label {
+  font-weight: 600;
+  color: #ddd;
+  font-size: 0.9rem;
+}
+
+.mode-dropdown {
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 280px;
+}
+
+.mode-dropdown:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.mode-dropdown:focus {
+  outline: none;
+  background: rgba(102, 126, 234, 0.2);
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+}
+
+.mode-dropdown option {
+  background: #1a1a1a;
+  color: #fff;
+  padding: 0.5rem;
 }
 
 .control-group {
@@ -345,6 +388,29 @@
   cursor: grab;
   transition: box-shadow 0.2s;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clip.selected {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+  z-index: 5;
+}
+
+.clip.has-notes {
+  background-image: linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px);
+  background-size: 20px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.clip .note-preview {
+  font-size: 12px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .clip.dragging {
@@ -358,4 +424,95 @@
   background-image: linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px);
   background-size: 20px 20px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Piano Roll Styles */
+.piano-roll-container {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.piano-roll-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.piano-roll-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #eee;
+}
+
+.back-btn {
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.piano-roll-message {
+  margin-top: 2rem;
+  padding: 3rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+
+.piano-roll-message p {
+  margin-bottom: 1rem;
+  color: #aaa;
+  font-size: 1.2rem;
+}
+
+.playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.control-btn {
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.control-btn.active {
+  background: rgba(16, 185, 129, 0.3);
+  border-color: #10b981;
+  box-shadow: 0 0 0 1px #10b981;
+}
+
+.transport-info {
+  font-family: monospace;
+  font-size: 1.1rem;
+  color: #ddd;
+  padding: 0 0.5rem;
 }
