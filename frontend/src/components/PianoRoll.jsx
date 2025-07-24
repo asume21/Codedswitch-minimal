@@ -1,6 +1,6 @@
 import React from 'react';
 import './PianoRoll.css';
-import AdvancedControls from './AdvancedControls';
+// import AdvancedControls from './AdvancedControls';
 import TransportControls from './TransportControls';
 import PianoKeys from './PianoKeys';
 import usePianoRollLogic from './usePianoRollLogic';
@@ -273,34 +273,9 @@ const PianoRoll = ({ notes, setNotes, width = 1000, height = 300 }) => {
       
       {/* Advanced controls panel */}
       {logic.showAdvancedControls && (
-        <AdvancedControls
-          currentKey={logic.currentKey}
-          setCurrentKey={logic.setCurrentKey}
-          currentScale={logic.currentScale}
-          setCurrentScale={logic.setCurrentScale}
-          snapToScale={logic.snapToScale}
-          setSnapToScale={logic.setSnapToScale}
-          applyScaleSnapping={logic.applyScaleSnapping}
-          chordMode={logic.chordMode}
-          setChordMode={logic.setChordMode}
-          currentChordType={logic.currentChordType}
-          setCurrentChordType={logic.setCurrentChordType}
-          patternMode={logic.patternMode}
-          setPatternMode={logic.setPatternMode}
-          selectedPattern={logic.selectedPattern}
-          setSelectedPattern={logic.setSelectedPattern}
-          quantizeEnabled={logic.quantizeEnabled}
-          setQuantizeEnabled={logic.setQuantizeEnabled}
-          applyQuantization={logic.applyQuantization}
-          gridResolution={logic.gridResolution}
-          updateGridResolution={logic.updateGridResolution}
-          generateVariation={logic.generateVariation}
-          showVelocityEditor={logic.showVelocityEditor}
-          setShowVelocityEditor={logic.setShowVelocityEditor}
-          velocityValue={logic.velocityValue}
-          setVelocityValue={logic.setVelocityValue}
-          applyVelocityToSelectedNotes={logic.applyVelocityToSelectedNotes}
-        />
+        <div className="advanced-controls-placeholder">
+          Advanced controls will be available once build issues are resolved
+        </div>
       )}
     </div>
   );
