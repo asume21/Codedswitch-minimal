@@ -58,7 +58,7 @@ export const isNoteInScale = (noteName, key, scaleType = 'major') => {
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 // Scale definitions (semitone intervals from root)
-export const SCALES = {
+const SCALES = {
   major: [0, 2, 4, 5, 7, 9, 11],
   minor: [0, 2, 3, 5, 7, 8, 10],
   harmonicMinor: [0, 2, 3, 5, 7, 8, 11],
@@ -74,7 +74,7 @@ export const SCALES = {
 };
 
 // Chord type definitions (semitone intervals from root)
-export const CHORD_TYPES = {
+const CHORD_TYPES = {
   maj: [0, 4, 7],
   min: [0, 3, 7],
   dim: [0, 3, 6],
@@ -92,7 +92,7 @@ export const CHORD_TYPES = {
 };
 
 // Common chord progressions by mood
-export const PROGRESSIONS = {
+const PROGRESSIONS = {
   happy: [
     ['I', 'V', 'vi', 'IV'],
     ['I', 'IV', 'V'],
@@ -126,7 +126,7 @@ export const PROGRESSIONS = {
 };
 
 // Roman numeral mapping to scale degrees
-export const NUMERAL_TO_DEGREE = {
+const NUMERAL_TO_DEGREE = {
   'I': 0,
   'II': 1,
   'III': 2,
