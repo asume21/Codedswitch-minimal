@@ -1,12 +1,12 @@
 import React from 'react';
 import './PianoRoll.css';
-import AdvancedControls from './AdvancedControls';
-import TransportControls from './TransportControls';
-import PianoKeys from './PianoKeys';
-import usePianoRollLogic from './usePianoRollLogic';
+import AdvancedControls from './AdvancedControls.jsx';
+import TransportControls from './TransportControls.jsx';
+import PianoKeys from './PianoKeys.jsx';
+import usePianoRollLogic from './usePianoRollLogic.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus, faMinus } from '@fortawesome/free-solid-svg-icons';
-import ChordProgressionGenerator from './ChordProgressionGenerator';
+import ChordProgressionGenerator from './ChordProgressionGenerator.jsx';
 
 const PianoRoll = ({ notes, setNotes, width = 1000, height = 300 }) => {
   // Use our custom hook for all logic and state
