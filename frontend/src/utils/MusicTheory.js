@@ -55,7 +55,7 @@ export const isNoteInScale = (noteName, key, scaleType = 'major') => {
 };
 
 // All notes in the chromatic scale
-export const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 // Scale definitions (semitone intervals from root)
 export const SCALES = {
