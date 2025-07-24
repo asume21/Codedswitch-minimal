@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import * as MusicTheory from '../utils/MusicTheory';
-import * as MelodyGenerator from '../utils/MelodyGenerator';
 
 const NOTE_NAMES = [
   'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'

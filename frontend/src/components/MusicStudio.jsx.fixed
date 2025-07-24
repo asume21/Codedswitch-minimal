@@ -1,0 +1,24 @@
+import React, { useState, useEffect, useRef } from 'react';
+import './MusicStudio.css';
+import * as Tone from 'tone';
+import { FaPlay, FaPause, FaStop, FaTrash, FaPlus, FaInfo, FaVolumeUp, FaVolumeMute } from 'react-icons/fa';
+
+// Backend URL
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://newnewwebsite.onrender.com';
+
+// Configuration for direct file access vs API
+const DIRECT_FILE_ACCESS = true; // Set to false to use API endpoints instead
+
+const MusicStudio = () => {
+  // All existing state, refs, and functions remain the same
+  // ...
+  
+  return (
+    <div className="music-studio">
+      {/* All existing UI components */}
+      <h1>Music Studio</h1>
+    </div>
+  );
+};
+
+export default MusicStudio;
