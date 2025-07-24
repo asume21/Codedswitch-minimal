@@ -15,7 +15,7 @@
  * @param {number} baseOctave - Base octave for the note
  * @returns {number} MIDI note number for the specified scale position
  */
-export const scalePositionToMidi = (key, scaleType, scalePosition, octaveOffset = 0, baseOctave = 4) => {
+const scalePositionToMidi = (key, scaleType, scalePosition, octaveOffset = 0, baseOctave = 4) => {
   // Get scale notes
   const scaleNotes = getScaleNotes(key, scaleType);
   if (!scaleNotes.length) {
@@ -43,7 +43,7 @@ export const scalePositionToMidi = (key, scaleType, scalePosition, octaveOffset 
  * @param {string} scaleType - Type of scale from SCALES
  * @returns {boolean} True if the note is in the scale
  */
-export const isNoteInScale = (noteName, key, scaleType = 'major') => {
+const isNoteInScale = (noteName, key, scaleType = 'major') => {
   // Get just the note part without the octave (e.g., 'C4' -> 'C')
   const noteOnly = noteName.replace(/[0-9]/g, '');
   
@@ -150,7 +150,7 @@ const NUMERAL_TO_DEGREE = {
  * @param {number} octave - Octave number (0-10)
  * @returns {number} MIDI note number or fallback value if invalid
  */
-export const getMidiNote = (noteName, octave) => {
+const getMidiNote = (noteName, octave) => {
   // Error handling for invalid inputs
   if (!noteName || typeof noteName !== 'string') {
     console.warn('Invalid note name provided to getMidiNote:', noteName);
@@ -173,7 +173,7 @@ export const getMidiNote = (noteName, octave) => {
  * @param {number} midiNote - MIDI note number (0-127)
  * @returns {Object} Object with note name and octave {note: string, octave: number}
  */
-export const getNoteFromMidi = (midiNote) => {
+const getNoteFromMidi = (midiNote) => {
   // Error handling for invalid MIDI note
   if (midiNote === undefined || midiNote === null || isNaN(midiNote)) {
     console.warn('Invalid MIDI note provided to getNoteFromMidi:', midiNote);
@@ -197,7 +197,7 @@ export const getNoteFromMidi = (midiNote) => {
  * @param {string} scaleType - Type of scale from SCALES, e.g., 'major', 'minor'
  * @returns {Array} Array of note names in the scale
  */
-export const getScaleNotes = (key, scaleType = 'major') => {
+const getScaleNotes = (key, scaleType = 'major') => {
   // Error handling for invalid scale type
   if (!SCALES[scaleType]) {
     console.warn(`Scale type '${scaleType}' not found, using major scale instead`);
@@ -224,7 +224,7 @@ export const getScaleNotes = (key, scaleType = 'major') => {
  * @param {number} octave - Base octave for the chord
  * @returns {Array} Array of MIDI note numbers for the chord
  */
-export const getChordNotes = (rootNote, chordType = 'maj', octave = 4) => {
+const getChordNotes = (rootNote, chordType = 'maj', octave = 4) => {
   // Error handling for invalid chord type
   if (!CHORD_TYPES[chordType]) {
     console.warn(`Chord type '${chordType}' not found, using major chord instead`);
@@ -571,6 +571,7 @@ export {
   SCALES,
   CHORD_TYPES,
   PROGRESSIONS,
+  NUMERAL_TO_DEGREE,
   getMidiNote,
   getNoteFromMidi,
   getScaleNotes,
@@ -581,5 +582,7 @@ export {
   generateMelody,
   harmonizeMelody,
   quantizeNotes,
-  snapNotesToScale
+  snapNotesToScale,
+  isNoteInScale,
+  scalePositionToMidi
 };
