@@ -329,14 +329,15 @@ const MusicStudio = () => {
     setAiResponse('')
     
     try {
-      const response = await fetch(`${BACKEND_URL}/api/ai/chat`, {
+      const response = await fetch(`${BACKEND_URL}/api/ai`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Key': localStorage.getItem('apiKey') || ''
         },
         body: JSON.stringify({
-          message: `Generate music: ${aiPrompt}`,
-          context: 'music_studio'
+          prompt: `Generate music: ${aiPrompt}`,
+          provider: import.meta.env.VITE_DEFAULT_AI_PROVIDER || 'grok'
         })
       })
       
