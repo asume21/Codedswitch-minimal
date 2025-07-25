@@ -2,23 +2,36 @@ import React, { useState, useRef, useEffect } from 'react'
 import './MusicStudio.css'
 import { FaPlay, FaPause, FaStop, FaVolumeUp, FaVolumeMute, FaDrum, FaMusic, FaRobot } from 'react-icons/fa'
 import { GiPianoKeys, GiTrumpet, GiFlute, GiSaxophone } from 'react-icons/gi'
+import * as Tone from 'tone'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://newnewwebsite.onrender.com'
 
-// Piano keys (one octave)
+// Piano keys (extended two octaves)
 const PIANO_KEYS = [
-  { note: 'C', type: 'white', midi: 60 },
-  { note: 'C#', type: 'black', midi: 61 },
-  { note: 'D', type: 'white', midi: 62 },
-  { note: 'D#', type: 'black', midi: 63 },
-  { note: 'E', type: 'white', midi: 64 },
-  { note: 'F', type: 'white', midi: 65 },
-  { note: 'F#', type: 'black', midi: 66 },
-  { note: 'G', type: 'white', midi: 67 },
-  { note: 'G#', type: 'black', midi: 68 },
-  { note: 'A', type: 'white', midi: 69 },
-  { note: 'A#', type: 'black', midi: 70 },
-  { note: 'B', type: 'white', midi: 71 }
+  { note: 'C', octave: 3, type: 'white', midi: 48 },
+  { note: 'C#', octave: 3, type: 'black', midi: 49 },
+  { note: 'D', octave: 3, type: 'white', midi: 50 },
+  { note: 'D#', octave: 3, type: 'black', midi: 51 },
+  { note: 'E', octave: 3, type: 'white', midi: 52 },
+  { note: 'F', octave: 3, type: 'white', midi: 53 },
+  { note: 'F#', octave: 3, type: 'black', midi: 54 },
+  { note: 'G', octave: 3, type: 'white', midi: 55 },
+  { note: 'G#', octave: 3, type: 'black', midi: 56 },
+  { note: 'A', octave: 3, type: 'white', midi: 57 },
+  { note: 'A#', octave: 3, type: 'black', midi: 58 },
+  { note: 'B', octave: 3, type: 'white', midi: 59 },
+  { note: 'C', octave: 4, type: 'white', midi: 60 },
+  { note: 'C#', octave: 4, type: 'black', midi: 61 },
+  { note: 'D', octave: 4, type: 'white', midi: 62 },
+  { note: 'D#', octave: 4, type: 'black', midi: 63 },
+  { note: 'E', octave: 4, type: 'white', midi: 64 },
+  { note: 'F', octave: 4, type: 'white', midi: 65 },
+  { note: 'F#', octave: 4, type: 'black', midi: 66 },
+  { note: 'G', octave: 4, type: 'white', midi: 67 },
+  { note: 'G#', octave: 4, type: 'black', midi: 68 },
+  { note: 'A', octave: 4, type: 'white', midi: 69 },
+  { note: 'A#', octave: 4, type: 'black', midi: 70 },
+  { note: 'B', octave: 4, type: 'white', midi: 71 }
 ]
 
 // Drum pads
@@ -47,11 +60,265 @@ const MusicStudio = () => {
   const [aiResponse, setAiResponse] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  
+  // Tone.js instruments
+  const [instruments, setInstruments] = useState(null)
+  
+  // Initialize Tone.js instruments
+  useEffect(() => {
+    // Ask for audio context permission
+    const initializeAudio = async () => {
+      try {
+        // Start audio context on user interaction
+        await Tone.start()
+        console.log('Audio context started')
+        
+        // Create instruments
+        const pianoSynth = new Tone.PolySynth(Tone.Synth).toDestination()
+        pianoSynth.set({
+          envelope: {
+            attack: 0.02,
+            decay: 0.1,
+            sustain: 0.3,
+            release: 1
+          }
+        })
+        
+        // Create drums using samples
+        const drumSampler = new Tone.Sampler({
+          urls: {
+            'C2': 'kick.mp3',
+            'D2': 'snare.mp3',
+            'E2': 'hihat.mp3',
+            'F2': 'crash.mp3',
+            'G2': 'tom.mp3',
+            'A2': 'clap.mp3'
+          },
+          baseUrl: 'https://tonejs.github.io/audio/drum-samples/kit-1/',
+          onload: () => console.log('Drum samples loaded')
+        }).toDestination()
+        
+        // Horn instruments
+        const hornSynth = new Tone.PolySynth(Tone.Synth).toDestination()
+        hornSynth.set({
+          oscillator: { type: 'sawtooth' },
+          envelope: {
+            attack: 0.1,
+            decay: 0.2,
+            sustain: 0.6,
+            release: 0.8
+          }
+        })
+        
+        // Sound FX synth
+        const fxSynth = new Tone.PolySynth(Tone.Synth).toDestination()
+        fxSynth.set({
+          oscillator: { type: 'sine' },
+          envelope: {
+            attack: 0.01,
+            decay: 0.1,
+            sustain: 0.1,
+            release: 0.5
+          }
+        })
+        
+        // Store all instruments in state
+        setInstruments({
+          piano: pianoSynth,
+          drums: drumSampler,
+          horns: hornSynth,
+          fx: fxSynth
+        })
+      } catch (error) {
+        console.error('Failed to start audio context:', error)
+      }
+    }
+    
+    initializeAudio()
+    
+    return () => {
+      // Dispose instruments when component unmounts
+      if (instruments) {
+        Object.values(instruments).forEach(instrument => {
+          if (instrument && instrument.dispose) {
+            instrument.dispose()
+          }
+        })
+      }
+    }
+  }, [])
 
-  // Simple sound generation (placeholder)
+  // Keyboard interaction support
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Prevent repeated triggers while key is held down
+      if (e.repeat) return
+      
+      // For drum pads using QWERAS keys
+      const drumKeyMap = {
+        'q': 'Kick',
+        'w': 'Snare',
+        'e': 'Hi-Hat',
+        'r': 'Crash',
+        'a': 'Tom',
+        's': 'Clap'
+      }
+      
+      // Handle piano notes (Z,X,C,V,B,N,M for white keys, S,D,G,H,J for black keys)
+      const pianoKeyMap = {
+        'z': { note: 'C', octave: 3, type: 'white' },
+        's': { note: 'C#', octave: 3, type: 'black' },
+        'x': { note: 'D', octave: 3, type: 'white' },
+        'd': { note: 'D#', octave: 3, type: 'black' },
+        'c': { note: 'E', octave: 3, type: 'white' },
+        'v': { note: 'F', octave: 3, type: 'white' },
+        'g': { note: 'F#', octave: 3, type: 'black' },
+        'b': { note: 'G', octave: 3, type: 'white' },
+        'h': { note: 'G#', octave: 3, type: 'black' },
+        'n': { note: 'A', octave: 3, type: 'white' },
+        'j': { note: 'A#', octave: 3, type: 'black' },
+        'm': { note: 'B', octave: 3, type: 'white' },
+        ',': { note: 'C', octave: 4, type: 'white' }
+      }
+
+      // Sound FX keyboard shortcuts
+      const fxKeyMap = {
+        '1': 'Drip',
+        '2': 'Hit',
+        '3': 'Whoosh',
+        '4': 'Pop',
+        '5': 'Zap',
+        '6': 'Beep'
+      }
+      
+      const key = e.key.toLowerCase()
+      
+      // Play sound based on active tab and key pressed
+      if (activeTab === 'drums' && key in drumKeyMap) {
+        // Find the drum pad element and trigger visual feedback
+        const drumPadIndex = DRUM_PADS.findIndex(pad => pad.name === drumKeyMap[key])
+        if (drumPadIndex >= 0) {
+          const drumPadElement = document.querySelectorAll('.drum-pad')[drumPadIndex]
+          if (drumPadElement) {
+            drumPadElement.classList.add('active-pad')
+            setTimeout(() => drumPadElement.classList.remove('active-pad'), 100)
+          }
+          playSound('drum', drumKeyMap[key])
+        }
+      } else if (activeTab === 'piano' && key in pianoKeyMap) {
+        // Find the piano key element and trigger visual feedback
+        const pianoKey = pianoKeyMap[key]
+        const pianoIndex = PIANO_KEYS.findIndex(k => 
+          k.note === pianoKey.note && k.octave === pianoKey.octave)
+        
+        if (pianoIndex >= 0) {
+          const keyElement = document.querySelectorAll('.piano-key')[pianoIndex]
+          if (keyElement) {
+            keyElement.classList.add(`active-${pianoKey.type}-key`)
+            setTimeout(() => keyElement.classList.remove(`active-${pianoKey.type}-key`), 100)
+          }
+          playSound('piano', pianoKey)
+        }
+      } else if (activeTab === 'horns' && ['t', 'y', 'u'].includes(key)) {
+        // Map to horn instruments
+        const hornMap = {
+          't': 'trumpet',
+          'y': 'saxophone',
+          'u': 'flute'
+        }
+        
+        const hornIndex = ['trumpet', 'saxophone', 'flute'].indexOf(hornMap[key])
+        if (hornIndex >= 0) {
+          const hornElement = document.querySelectorAll('.horn-btn')[hornIndex]
+          if (hornElement) {
+            hornElement.classList.add('active-horn')
+            setTimeout(() => hornElement.classList.remove('active-horn'), 300)
+          }
+          playSound('horn', hornMap[key])
+        }
+      } else if (activeTab === 'fx' && key in fxKeyMap) {
+        // Find the sound FX pad element and trigger visual feedback
+        const fxIndex = SOUND_FX.findIndex(fx => fx.name === fxKeyMap[key])
+        if (fxIndex >= 0) {
+          const fxElement = document.querySelectorAll('.fx-pad')[fxIndex]
+          if (fxElement) {
+            fxElement.classList.add('active-pad')
+            setTimeout(() => fxElement.classList.remove('active-pad'), 100)
+          }
+          playSound('fx', fxKeyMap[key])
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [activeTab, instruments])
+  
+  // Sound playback using Tone.js
   const playSound = (type, note) => {
+    if (!instruments) return
+    
+    // Make sure Tone.js context is running
+    if (Tone.context.state !== 'running') {
+      Tone.start()
+    }
+    
     console.log(`Playing ${type}: ${note}`)
-    // Here you would integrate with Tone.js or Web Audio API
+    
+    try {
+      switch (type) {
+        case 'piano':
+          // For piano we use the note with octave
+          instruments.piano.triggerAttackRelease(`${note.note}${note.octave || 4}`, '4n')
+          break
+          
+        case 'drum':
+          // Map drum pad to sample note
+          const drumNotes = {
+            'Kick': 'C2',
+            'Snare': 'D2',
+            'Hi-Hat': 'E2',
+            'Crash': 'F2',
+            'Tom': 'G2',
+            'Clap': 'A2'
+          }
+          instruments.drums.triggerAttackRelease(drumNotes[note], '8n')
+          break
+          
+        case 'horn':
+          // Different settings for different horns
+          const hornSettings = {
+            'trumpet': { note: 'C4', duration: '2n', detune: 0 },
+            'saxophone': { note: 'G3', duration: '2n', detune: -5 },
+            'flute': { note: 'E5', duration: '2n', detune: 10 }
+          }
+          const settings = hornSettings[note]
+          instruments.horns.triggerAttackRelease(settings.note, settings.duration)
+          break
+          
+        case 'fx':
+          // Different effects with different settings
+          const fxSettings = {
+            'Drip': { note: 'C6', duration: '16n' },
+            'Hit': { note: 'G2', duration: '8n' },
+            'Whoosh': { note: 'C5', duration: '4n', glide: true },
+            'Pop': { note: 'G5', duration: '32n' },
+            'Zap': { note: 'E7', duration: '16n' },
+            'Beep': { note: 'A5', duration: '8n' }
+          }
+          const fx = fxSettings[note]
+          instruments.fx.triggerAttackRelease(fx.note, fx.duration)
+          break
+          
+        default:
+          console.warn(`Unknown instrument type: ${type}`)
+      }
+    } catch (error) {
+      console.error('Error playing sound:', error)
+    }
   }
 
   // AI Music Generation
@@ -108,10 +375,13 @@ const MusicStudio = () => {
           <button
             key={index}
             className={`piano-key ${key.type}-key`}
-            onClick={() => playSound('piano', key.note)}
-            title={`${key.note} - Click to play`}
+            onClick={() => playSound('piano', key)}
+            title={`${key.note}${key.octave} - Click to play`}
+            onMouseDown={(e) => e.currentTarget.classList.add(`active-${key.type}-key`)}
+            onMouseUp={(e) => setTimeout(() => e.currentTarget.classList.remove(`active-${key.type}-key`), 100)}
+            onMouseLeave={(e) => e.currentTarget.classList.remove(`active-${key.type}-key`)}
           >
-            {key.type === 'white' && <span className="key-label">{key.note}</span>}
+            {key.type === 'white' && <span className="key-label">{key.note}{key.octave}</span>}
           </button>
         ))}
       </div>
@@ -141,6 +411,9 @@ const MusicStudio = () => {
             style={{ backgroundColor: pad.color }}
             onClick={() => playSound('drum', pad.name)}
             title={`${pad.name} - Press ${pad.key} or click`}
+            onMouseDown={(e) => e.currentTarget.classList.add('active-pad')}
+            onMouseUp={(e) => setTimeout(() => e.currentTarget.classList.remove('active-pad'), 100)}
+            onMouseLeave={(e) => e.currentTarget.classList.remove('active-pad')}
           >
             <div className="pad-name">{pad.name}</div>
             <div className="pad-key">{pad.key}</div>
@@ -166,15 +439,30 @@ const MusicStudio = () => {
         </button>
       </div>
       <div className="horn-instruments">
-        <button className="horn-btn" onClick={() => playSound('horn', 'trumpet')}>
+        <button 
+          className="horn-btn"
+          onClick={() => playSound('horn', 'trumpet')}
+          onMouseDown={(e) => e.currentTarget.classList.add('active-horn')}
+          onMouseUp={(e) => setTimeout(() => e.currentTarget.classList.remove('active-horn'), 300)}
+        >
           <GiTrumpet size={24} />
           <span>Trumpet</span>
         </button>
-        <button className="horn-btn" onClick={() => playSound('horn', 'saxophone')}>
+        <button 
+          className="horn-btn"
+          onClick={() => playSound('horn', 'saxophone')}
+          onMouseDown={(e) => e.currentTarget.classList.add('active-horn')}
+          onMouseUp={(e) => setTimeout(() => e.currentTarget.classList.remove('active-horn'), 300)}
+        >
           <GiSaxophone size={24} />
           <span>Saxophone</span>
         </button>
-        <button className="horn-btn" onClick={() => playSound('horn', 'flute')}>
+        <button 
+          className="horn-btn"
+          onClick={() => playSound('horn', 'flute')}
+          onMouseDown={(e) => e.currentTarget.classList.add('active-horn')}
+          onMouseUp={(e) => setTimeout(() => e.currentTarget.classList.remove('active-horn'), 300)}
+        >
           <GiFlute size={24} />
           <span>Flute</span>
         </button>
@@ -205,6 +493,8 @@ const MusicStudio = () => {
             style={{ backgroundColor: fx.color }}
             onClick={() => playSound('fx', fx.name)}
             title={`${fx.name} - Click to play`}
+            onMouseDown={(e) => e.currentTarget.classList.add('active-pad')}
+            onMouseUp={(e) => setTimeout(() => e.currentTarget.classList.remove('active-pad'), 100)}
           >
             <div className="fx-name">{fx.name}</div>
           </button>
@@ -218,6 +508,13 @@ const MusicStudio = () => {
       <div className="studio-header">
         <h1>🎵 AI-Powered Music Studio</h1>
         <p>Click instruments to play them, or ask the AI to create music for you!</p>
+        <div className="keyboard-tips">
+          <p><strong>Keyboard Shortcuts:</strong></p>
+          <p>🎹 Piano: <span className="key-tip">Z</span> through <span className="key-tip">,</span> for white keys, <span className="key-tip">S,D,G,H,J</span> for black keys</p>
+          <p>🥁 Drums: <span className="key-tip">Q,W,E,R,A,S</span> for drum pads</p>
+          <p>🎺 Horns: <span className="key-tip">T</span> (trumpet), <span className="key-tip">Y</span> (saxophone), <span className="key-tip">U</span> (flute)</p>
+          <p>📯 Sound FX: <span className="key-tip">1-6</span> for effect pads</p>
+        </div>
       </div>
 
       {/* AI Control Panel */}
@@ -294,18 +591,47 @@ const MusicStudio = () => {
       <div className="transport-controls">
         <button 
           className={`transport-btn ${isPlaying ? 'active' : ''}`}
-          onClick={() => setIsPlaying(!isPlaying)}
+          onClick={() => {
+            // Initialize audio context if needed
+            if (Tone.context.state !== 'running') {
+              Tone.start()
+            }
+            setIsPlaying(!isPlaying)
+            if (!isPlaying) {
+              Tone.Transport.start()
+            } else {
+              Tone.Transport.pause()
+            }
+          }}
         >
           {isPlaying ? <FaPause /> : <FaPlay />}
           {isPlaying ? 'Pause' : 'Play'}
         </button>
         <button 
           className="transport-btn"
-          onClick={() => setIsPlaying(false)}
+          onClick={() => {
+            setIsPlaying(false)
+            Tone.Transport.stop()
+          }}
         >
           <FaStop />
           Stop
         </button>
+        <div className="volume-control">
+          <FaVolumeUp />
+          <input 
+            type="range" 
+            min="0" 
+            max="1" 
+            step="0.01" 
+            defaultValue="0.7" 
+            onChange={(e) => {
+              if (instruments) {
+                Tone.Destination.volume.value = Tone.gainToDb(parseFloat(e.target.value))
+              }
+            }}
+          />
+        </div>
       </div>
     </div>
   )
