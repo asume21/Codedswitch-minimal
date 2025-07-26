@@ -17,6 +17,9 @@ const BeatStudio = () => {
   const [audioUrl, setAudioUrl] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
   
+  // Synth instances
+  const [synths, setSynths] = useState(null)
+  
   // Enhanced sequencer state
   const [tracks, setTracks] = useState([
     { id: 1, name: 'Drums', type: 'drums', clips: [], mute: false, color: '#ff6b6b' },
@@ -40,24 +43,97 @@ const BeatStudio = () => {
   const GRID_SIZE = 25
   const TRACK_HEIGHT = 80
 
-  // Enhanced audio playback with error handling
-  const playPadClip = async (clip) => {
-    try {
-      await Tone.start()
-      
-      if (DIRECT_FILE_ACCESS) {
-        // Direct file access for local development
-        const audioPath = `/sounds/loops/${clip.bpm}/${clip.filename}`
-        const player = new Tone.Player(audioPath).toDestination()
-        await player.load()
-        player.start()
-      } else {
-        // API access for production
-        const url = `${BACKEND_URL}/api/loops/${clip.bpm}/${clip.filename}`
-        const player = new Tone.Player(url).toDestination()
-        await player.load()
-        player.start()
+  // Initialize synths on component mount
+  useEffect(() => {
+    // Create synth instances
+    const drumSynth = new Tone.MembraneSynth({
+      pitchDecay: 0.05,
+      octaves: 4,
+      oscillator: { type: 'sine' },
+      envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 1.4 }
+    }).toDestination()
+    
+    const noiseSynth = new Tone.NoiseSynth({
+      noise: { type: 'white' },
+      envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.2 }
+    }).toDestination()
+    
+    const bassSynth = new Tone.Synth({
+      oscillator: { type: 'triangle' },
+      envelope: { attack: 0.05, decay: 0.2, sustain: 0.4, release: 1.2 }
+    }).toDestination()
+    bassSynth.volume.value = -6
+    
+    const melodySynth = new Tone.PolySynth(Tone.Synth, {
+      oscillator: { type: 'sine' },
+      envelope: { attack: 0.01, decay: 0.1, sustain: 0.3, release: 1 }
+    }).toDestination()
+    melodySynth.volume.value = -8
+    
+    const fxSynth = new Tone.Synth({
+      oscillator: { type: 'sine' },
+      envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 }
+    }).toDestination()
+    
+    setSynths({
+      drum: drumSynth,
+      noise: noiseSynth,
+      bass: bassSynth,
+      melody: melodySynth,
+      fx: fxSynth
+    })
+    
+    // Cleanup synths when component unmounts
+    return () => {
+      if (synths) {
+        Object.values(synths).forEach(synth => {
+          if (synth && synth.dispose) {
+            synth.dispose()
+          }
+        })
       }
+    }
+  }, [])
+
+  // Enhanced audio playback 
+  const playPadClip = (clip) => {
+    try {
+      Tone.start().then(() => {
+        if (!clip) return
+        
+        if (clip.url) {
+          const player = new Tone.Player({
+            url: clip.url,
+            onload: () => {
+              player.start()
+            }
+          }).toDestination()
+        } else {
+          switch (clip.type) {
+            case 'drum':
+              const drumSynth = new Tone.MembraneSynth().toDestination()
+              drumSynth.triggerAttackRelease('C1', '8n')
+              break
+            case 'bass':
+              const bassSynth = new Tone.Synth({
+                oscillator: { type: 'triangle' }
+              }).toDestination()
+              bassSynth.triggerAttackRelease('C2', '8n')
+              break
+            case 'melody':
+              const melodySynth = new Tone.PolySynth().toDestination()
+              melodySynth.triggerAttackRelease(['C4', 'E4', 'G4'], '8n')
+              break
+            case 'fx':
+              const fxSynth = new Tone.FMSynth().toDestination()
+              fxSynth.triggerAttackRelease('C5', '16n')
+              break
+            default:
+              const defaultSynth = new Tone.Synth().toDestination()
+              defaultSynth.triggerAttackRelease('C4', '8n')
+          }
+        }
+      })
     } catch (error) {
       console.error('Error playing clip:', error)
       setErrorMessage('Failed to play audio clip')
@@ -65,7 +141,7 @@ const BeatStudio = () => {
     }
   }
 
-  // Enhanced beat generation
+  // Enhanced beat generation with fallback for development
   const handleGenerate = async () => {
     setGenerating(true)
     setErrorMessage('')
@@ -73,35 +149,140 @@ const BeatStudio = () => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/generate-music`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: `${style} beat`, duration: 30 })
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-API-Key': localStorage.getItem('apiKey') || ''
+        },
+        body: JSON.stringify({ 
+          prompt: `Generate a ${style} beat with drums, bass, and melody`, 
+          provider: import.meta.env.VITE_DEFAULT_AI_PROVIDER || 'grok',
+          duration: 30 
+        })
       })
       
-      if (res.status !== 202) {
-        const errorText = await res.text()
-        throw new Error(errorText || 'Failed to enqueue beat generation')
+      if (res.ok) {
+        const data = await res.json()
+        if (data && data.audioUrl) {
+          setAudioUrl(data.audioUrl)
+          return
+        }
       }
       
-      const { jobId } = await res.json()
+      throw new Error('Backend API failed, using fallback')
+    } catch (apiError) {
+      console.log('API error, using fallback:', apiError)
+    }
+    
+    try {
+      await Tone.start()
       
-      // Poll for generated file
-      let musicBlob
-      while (true) {
-        const pollRes = await fetch(`${BACKEND_URL}/api/music-file?jobId=${jobId}`)
-        if (pollRes.status === 202) {
-          await new Promise(r => setTimeout(r, 2000))
-          continue
-        }
-        if (!pollRes.ok) {
-          const errorText = await pollRes.text()
-          throw new Error(errorText || 'Failed to fetch generated beat')
-        }
-        musicBlob = await pollRes.blob()
-        break
+      const kick = new Tone.MembraneSynth({
+        pitchDecay: 0.05,
+        octaves: 4,
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 1.4 }
+      }).toDestination()
+      kick.volume.value = -6
+      
+      const snare = new Tone.NoiseSynth({
+        noise: { type: 'white' },
+        envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.2 }
+      }).toDestination()
+      snare.volume.value = -8
+      
+      const hihat = new Tone.MetalSynth({
+        frequency: 200,
+        envelope: { attack: 0.001, decay: 0.1, sustain: 0.003, release: 0.01 },
+        harmonicity: 5.1,
+        modulationIndex: 32,
+        resonance: 4000,
+        octaves: 1.5
+      }).toDestination()
+      hihat.volume.value = -20
+      
+      let kickPattern, snarePattern, hihatPattern
+      
+      switch (style.toLowerCase()) {
+        case 'hip-hop':
+          kickPattern = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+          snarePattern = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0]
+          hihatPattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+          break
+        case 'electronic':
+          kickPattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+          snarePattern = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0]
+          hihatPattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+          break
+        case 'jazz':
+          kickPattern = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+          snarePattern = [0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1]
+          hihatPattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+          break
+        default: // Pop
+          kickPattern = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]
+          snarePattern = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0]
+          hihatPattern = [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
       }
       
-      const url = URL.createObjectURL(musicBlob)
+      const kickSeq = new Tone.Sequence((time, idx) => {
+        if (kickPattern[idx] === 1) {
+          kick.triggerAttackRelease('C1', '8n', time)
+        }
+      }, Array.from({length: 16}, (_, i) => i), "16n")
+      
+      const snareSeq = new Tone.Sequence((time, idx) => {
+        if (snarePattern[idx] === 1) {
+          snare.triggerAttackRelease('16n', time)
+        }
+      }, Array.from({length: 16}, (_, i) => i), "16n")
+      
+      const hihatSeq = new Tone.Sequence((time, idx) => {
+        if (hihatPattern[idx] === 1) {
+          hihat.triggerAttackRelease('32n', time)
+        }
+      }, Array.from({length: 16}, (_, i) => i), "16n")
+      
+      const recorder = new Tone.Recorder()
+      kick.connect(recorder)
+      snare.connect(recorder)
+      hihat.connect(recorder)
+      await recorder.start()
+      
+      Tone.Transport.bpm.value = bpm
+      kickSeq.start(0)
+      snareSeq.start(0)
+      hihatSeq.start(0)
+      
+      Tone.Transport.start()
+      
+      await new Promise(resolve => setTimeout(resolve, 10000))
+      
+      const recording = await recorder.stop()
+      const url = URL.createObjectURL(recording)
       setAudioUrl(url)
+      
+      Tone.Transport.stop()
+      kickSeq.dispose()
+      snareSeq.dispose()
+      hihatSeq.dispose()
+      kick.dispose()
+      snare.dispose()
+      hihat.dispose()
+      
+      const drumTrack = tracks.find(t => t.name === 'Drums')
+      if (drumTrack) {
+        const newClip = {
+          id: `generated-drums-${Date.now()}`,
+          filename: `${style} Drums`,
+          startTime: 0,
+          duration: 10,
+          color: '#ff6b6b',
+          loop: true,
+          url: url
+        }
+        
+        addClipToTrack(drumTrack.id, newClip)
+      }
       
     } catch (error) {
       console.error('Beat generation error:', error)
@@ -112,13 +293,43 @@ const BeatStudio = () => {
     }
   }
 
-  // Enhanced playback with pause/resume support
+  const stopPlayback = () => {
+    Tone.Transport.stop()
+    Tone.Transport.cancel() // Clear all scheduled events
+    
+    Tone.Transport.seconds = 0
+    transportTimeRef.current = 0
+    setTransportTime(0)
+    setPlayheadPosition(0)
+    
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+      animationFrameRef.current = null
+    }
+    
+    Object.values(playersRef.current).forEach(player => {
+      try {
+        if (player) {
+          if (player.stop) player.stop()
+          if (player.disconnect) player.disconnect()
+          if (player.dispose) player.dispose()
+        }
+      } catch (e) {
+        console.error('Error disposing player:', e)
+      }
+    })
+    
+    playersRef.current = {}
+    
+    setPlaying(false)
+    setPaused(false)
+  }
+
   const handlePlayPause = async () => {
     try {
       await Tone.start()
       
       if (playing && !paused) {
-        // Pause
         transportTimeRef.current = Tone.Transport.seconds
         Tone.Transport.pause()
         setPaused(true)
@@ -129,14 +340,12 @@ const BeatStudio = () => {
       }
       
       if (paused) {
-        // Resume
         Tone.Transport.start()
         setPaused(false)
         updatePlayhead()
         return
       }
       
-      // Start from beginning
       startPlayback()
       
     } catch (error) {
@@ -147,150 +356,311 @@ const BeatStudio = () => {
   }
 
   const startPlayback = async () => {
-    if (playing && !paused) return
-    
     try {
-      // Stop and clean up previous playback
+      await Tone.start()
+      
+      if (paused) {
+        Tone.Transport.start()
+        setPaused(false)
+        setPlaying(true)
+        animationFrameRef.current = requestAnimationFrame(updatePlayhead)
+        return
+      }
+      
       Tone.Transport.stop()
       Tone.Transport.cancel()
       
-      // Dispose old players
       Object.values(playersRef.current).forEach(player => {
         if (player && player.dispose) player.dispose()
       })
-      playersRef.current = {}
       
-      // Reset transport
-      Tone.Transport.seconds = 0
-      transportTimeRef.current = 0
-      setTransportTime(0)
-      setPlayheadPosition(0)
+      stopPlayback()
       
-      // Set BPM
       Tone.Transport.bpm.value = bpm
       
-      // Schedule all clips from all tracks
-      tracks.forEach(track => {
-        if (track.mute) return
-        
-        track.clips.forEach(clip => {
-          const clipId = `${track.id}-${clip.id}`
-          
-          try {
-            let audioPath
-            if (DIRECT_FILE_ACCESS) {
-              audioPath = `/sounds/loops/${clip.bpm || bpm}/${clip.filename}`
-            } else {
-              audioPath = `${BACKEND_URL}/api/loops/${clip.bpm || bpm}/${clip.filename}`
-            }
-            
-            const player = new Tone.Player(audioPath).toDestination()
-            player.loop = clip.loop || false
-            
-            playersRef.current[clipId] = player
-            
-            const startTime = clip.startTime || 0
-            Tone.Transport.schedule((time) => {
-              if (playersRef.current[clipId]) {
-                playersRef.current[clipId].start(time)
-              }
-            }, startTime)
-            
-          } catch (error) {
-            console.error(`Error scheduling clip ${clip.filename}:`, error)
-          }
-        })
-      })
+      setPlayheadPosition(0)
+      transportTimeRef.current = 0
       
-      // Start transport and update state
+      const newPlayers = {}
+      
+      if (tracks.every(track => track.clips.length === 0)) {
+        console.log('No clips found, creating default patterns')
+        
+        const drumSequence = new Tone.Sequence((time, idx) => {
+          if (idx === 0 || idx === 8) {
+            if (!playersRef.current.kick) {
+              playersRef.current.kick = new Tone.MembraneSynth({
+                pitchDecay: 0.05,
+                octaves: 4,
+                oscillator: { type: 'sine' },
+                envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 1.4 }
+              }).toDestination()
+            }
+            playersRef.current.kick.triggerAttackRelease('C1', '8n', time)
+          }
+          if (idx === 4 || idx === 12) {
+            if (!playersRef.current.snare) {
+              playersRef.current.snare = new Tone.NoiseSynth({
+                noise: { type: 'white' },
+                envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.2 }
+              }).toDestination()
+            }
+            playersRef.current.snare.triggerAttackRelease('16n', time)
+          }
+          if ([0, 2, 4, 6, 8, 10, 12, 14].includes(idx)) {
+            if (!playersRef.current.hihat) {
+              playersRef.current.hihat = new Tone.MetalSynth({
+                frequency: 200,
+                envelope: { attack: 0.001, decay: 0.1, sustain: 0.003, release: 0.01 },
+                harmonicity: 5.1,
+                modulationIndex: 32,
+                resonance: 4000,
+                octaves: 1.5
+              }).toDestination()
+              playersRef.current.hihat.volume.value = -20
+            }
+            playersRef.current.hihat.triggerAttackRelease('32n', time)
+          }
+        }, Array.from({length: 16}, (_, i) => i), "16n")
+        
+        drumSequence.start(0)
+        playersRef.current.drumSequence = drumSequence
+        
+        const bassSequence = new Tone.Sequence((time, note) => {
+          if (note) {
+            if (!synths) return
+            synths.bass.triggerAttackRelease(note, '8n', time)
+          }
+        }, ['C2', 'G1', 'A#1', 'F1'], '2n')
+        
+        bassSequence.start(0)
+        playersRef.current.bassSequence = bassSequence
+      } else {
+        // Schedule all clips for playback
+        tracks.forEach((track) => {
+          if (track.mute) return
+          
+          track.clips.forEach((clip) => {
+            try {
+              const startOffset = clip.position / PIXELS_PER_SECOND
+              const clipDuration = clip.duration || 2 // Default 2 seconds if not set
+              
+              // Handle clips with URLs - these should still work if user has custom clips
+              if (clip.url) {
+                try {
+                  const player = new Tone.Player({
+                    url: clip.url,
+                    loop: clip.loop || false,
+                    onload: () => {
+                      console.log(`Loaded clip: ${clip.filename || 'unnamed'}`)
+                    },
+                    onerror: (e) => {
+                      console.error(`Failed to load clip: ${clip.filename}`, e)
+                      // If URL fails, fallback to synthesizer
+                      scheduleLocalSynthClip(track, clip, startOffset, clipDuration)
+                    }
+                  }).toDestination()
+                  
+                  Tone.Transport.schedule(time => {
+                    player.start(time)
+                  }, startOffset)
+                  
+                  if (!clip.loop) {
+                    Tone.Transport.schedule(time => {
+                      player.stop(time)
+                    }, startOffset + clipDuration)
+                  }
+                  
+                  // Store player reference for cleanup
+                  newPlayers[`${track.id}-${clip.id}`] = player
+                } catch (urlError) {
+                  console.error('Error loading URL clip, using synth fallback:', urlError)
+                  // Fallback to synthesizer if URL loading fails
+                  scheduleLocalSynthClip(track, clip, startOffset, clipDuration)
+                }
+              } else {
+                // For local synth clips, schedule them directly
+                scheduleLocalSynthClip(track, clip, startOffset, clipDuration)
+              }
+            } catch (error) {
+              console.error('Error processing clip:', error)
+            }
+          })
+        })
+      }
+      
+      function scheduleLocalSynthClip(track, clip, startOffset, clipDuration) {
+        if (!synths) return
+        
+        let clipSource
+        let pattern
+        
+        // Choose appropriate synth based on track type
+        if (track.name.toLowerCase().includes('drum')) {
+          clipSource = synths.drum
+          pattern = ['C1', null, 'E1', null]
+        } else if (track.name.toLowerCase().includes('bass')) {
+          clipSource = synths.bass
+          pattern = ['C2', null, 'G1', null]
+        } else if (track.name.toLowerCase().includes('melody')) {
+          clipSource = synths.melody
+          pattern = ['C4', 'E4', 'G4', 'B4']
+        } else if (track.name.toLowerCase().includes('fx')) {
+          clipSource = synths.fx
+          pattern = ['C5', null, 'D5', null]
+        } else {
+          clipSource = synths.drum // Default to drum
+          pattern = ['C1', null, 'E1', null]
+        }
+        
+        if (clipSource) {
+          // Create a sequence for this clip
+          const sequence = new Tone.Sequence((time, note) => {
+            if (note) {
+              if (track.name.toLowerCase().includes('drum')) {
+                clipSource.triggerAttackRelease(note, '8n', time)
+              } else if (track.name.toLowerCase().includes('bass')) {
+                clipSource.triggerAttackRelease(note, '8n', time)
+              } else if (track.name.toLowerCase().includes('melody')) {
+                clipSource.triggerAttackRelease(note, '8n', time)
+              } else {
+                clipSource.triggerAttackRelease(note, '16n', time)
+              }
+            }
+          }, pattern, '8n')
+          
+          // Schedule sequence to start and stop
+          Tone.Transport.schedule(time => {
+            sequence.start(time)
+          }, startOffset)
+          
+          if (!clip.loop) {
+            Tone.Transport.schedule(time => {
+              sequence.stop(time)
+            }, startOffset + clipDuration)
+          }
+          
+          // Store sequence reference for cleanup
+          newPlayers[`${track.id}-${clip.id}`] = sequence
+        }
+      }
+      
+      playersRef.current = { ...playersRef.current, ...newPlayers }
       Tone.Transport.start()
       setPlaying(true)
-      setPaused(false)
       
-      // Start playhead animation
-      updatePlayhead()
-      
+      animationFrameRef.current = requestAnimationFrame(updatePlayhead)
     } catch (error) {
       console.error('Error starting playback:', error)
-      setErrorMessage('Failed to start playback')
+      setErrorMessage('Failed to start playback: ' + error.message)
       setTimeout(() => setErrorMessage(''), 3000)
     }
   }
 
-  const stopPlayback = () => {
-    Tone.Transport.stop()
-    Tone.Transport.cancel()
-    
-    // Dispose all players
-    Object.values(playersRef.current).forEach(player => {
-      if (player && player.dispose) player.dispose()
-    })
-    playersRef.current = {}
-    
-    setPlaying(false)
-    setPaused(false)
-    setTransportTime(0)
-    setPlayheadPosition(0)
-    transportTimeRef.current = 0
-    
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current)
-    }
-  }
+const updatePlayhead = () => {
+  if (!(playing && !paused)) return
+  
+  // Get current transport time
+  const now = Tone.Transport.seconds
+  transportTimeRef.current = now
+  setTransportTime(now)
+  
+  // Update playhead position
+  const pixelsPerSecond = PIXELS_PER_SECOND
+  const newPosition = now * pixelsPerSecond
+  setPlayheadPosition(newPosition)
+  
+  animationFrameRef.current = requestAnimationFrame(updatePlayhead)
+}
 
-  const updatePlayhead = () => {
-    if (playing && !paused) {
-      const currentTime = Tone.Transport.seconds
-      setTransportTime(currentTime)
-      setPlayheadPosition(currentTime * PIXELS_PER_SECOND)
+// Clip management functions
+const addClipToTrack = (trackId, clip) => {
+  try {
+    // If clip doesn't have an ID, add one
+    if (!clip.id) clip.id = `clip-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+    
+    // Position the clip at the current playhead position if not specified
+    if (clip.position === undefined) {
+      clip.position = playheadPosition
+    }
+    
+    // Set default duration if not provided
+    if (!clip.duration) {
+      clip.duration = 2 // 2 seconds default
+    }
+    
+    // If clip references an external URL, create a local synthesized version instead
+    // This avoids 404 errors when external URLs are unavailable
+    if (clip.url && clip.url.includes('tonejs.github.io')) {
+      console.log('Converting external URL clip to local synth-based clip:', clip.filename)
       
-      animationFrameRef.current = requestAnimationFrame(updatePlayhead)
-    }
-  }
-
-  // Clip management functions
-  const addClipToTrack = (trackId, clip) => {
-    const newClip = {
-      id: Date.now() + Math.random(),
-      filename: clip.filename,
-      bpm: clip.bpm,
-      startTime: 0,
-      duration: 4, // Default 4 seconds
-      loop: false,
-      color: tracks.find(t => t.id === trackId)?.color || '#666'
+      // Remove external URL and set type based on filename
+      const filename = clip.filename?.toLowerCase() || ''
+      
+      // Determine appropriate type based on filename
+      if (filename.includes('kick') || filename.includes('bass') || filename.includes('bd')) {
+        clip.type = 'drum'
+        clip.note = 'C1' // Kick drum note
+        delete clip.url
+      } else if (filename.includes('snare') || filename.includes('clap') || filename.includes('sd')) {
+        clip.type = 'drum'
+        clip.note = 'E1' // Snare drum note
+        delete clip.url
+      } else if (filename.includes('hi-hat') || filename.includes('hihat') || filename.includes('hh')) {
+        clip.type = 'drum'
+        clip.note = 'G2' // Hi-hat note
+        delete clip.url
+      } else if (filename.includes('bass') || filename.includes('808')) {
+        clip.type = 'bass'
+        delete clip.url
+      } else if (filename.includes('synth') || filename.includes('lead') || filename.includes('pad')) {
+        clip.type = 'melody'
+        delete clip.url
+      } else {
+        clip.type = 'fx'
+        delete clip.url
+      }
     }
     
-    setTracks(prev => prev.map(track => 
-      track.id === trackId 
-        ? { ...track, clips: [...track.clips, newClip] }
-        : track
-    ))
-  }
-
-  const removeClip = (trackId, clipId) => {
-    setTracks(prev => prev.map(track => 
-      track.id === trackId 
-        ? { ...track, clips: track.clips.filter(c => c.id !== clipId) }
-        : track
-    ))
-    setSelectedClip(null)
-  }
-
-  const toggleTrackMute = (trackId) => {
-    setTracks(prev => prev.map(track => 
-      track.id === trackId ? { ...track, mute: !track.mute } : track
-    ))
-  }
-
-  // Drag and drop functionality
-  const startDrag = (e, trackId, clipId) => {
-    e.preventDefault()
-    const clip = tracks.find(t => t.id === trackId)?.clips.find(c => c.id === clipId)
-    if (!clip) return
+    // Find the track to update
+    const track = tracks.find(t => t.id === trackId)
+    if (!track) {
+      console.error('Track not found:', trackId)
+      return
+    }
     
-    setDragging({ trackId, clipId, startX: e.clientX })
-    setSelectedClip({ trackId, clipId })
+    // Make sure clip type matches track type if not specified
+    if (!clip.type) {
+      if (track.name.toLowerCase().includes('drum')) {
+        clip.type = 'drum'
+      } else if (track.name.toLowerCase().includes('bass')) {
+        clip.type = 'bass'
+      } else if (track.name.toLowerCase().includes('melody')) {
+        clip.type = 'melody'
+      } else if (track.name.toLowerCase().includes('fx')) {
+        clip.type = 'fx'
+      } else {
+        clip.type = 'drum' // Default
+      }
+    }
+    
+    setTracks(prevTracks => {
+      return prevTracks.map(track => {
+        if (track.id === trackId) {
+          return { ...track, clips: [...track.clips, clip] }
+        }
+        return track
+      })
+    })
+    
+    return clip.id
+  } catch (error) {
+    console.error('Error adding clip to track:', error)
+    setErrorMessage(`Failed to add clip: ${error.message}`)
+    setTimeout(() => setErrorMessage(''), 3000)
+    return null
   }
+}
 
   const handleMouseMove = (e) => {
     if (!dragging) return
@@ -339,18 +709,14 @@ const BeatStudio = () => {
   }, [])
 
   return (
-    <div className="studio-page">
+    <div className="beat-studio">
       <h1 className="studio-title">🎧 Beat Studio</h1>
       <p className="studio-description">
         Professional beat sequencer with multi-track support, drag-and-drop editing, and AI-powered generation.
       </p>
-
-      {errorMessage && (
-        <div className="error-message">
-          {errorMessage}
-        </div>
-      )}
-
+      
+      {errorMessage && <div className="error-message">{errorMessage}</div>}
+      
       <div className="beat-controls">
         <div className="control-group">
           <label>
@@ -360,12 +726,12 @@ const BeatStudio = () => {
               onChange={(e) => setStyle(e.target.value)}
               className="style-selector"
             >
-              <option>Hip-Hop</option>
-              <option>Trap</option>
-              <option>Lo-Fi</option>
-              <option>House</option>
-              <option>Techno</option>
-              <option>Drum & Bass</option>
+              <option value="Hip-Hop">Hip-Hop</option>
+              <option value="Trap">Trap</option>
+              <option value="Lo-Fi">Lo-Fi</option>
+              <option value="House">House</option>
+              <option value="Techno">Techno</option>
+              <option value="Drum & Bass">Drum & Bass</option>
             </select>
           </label>
 
@@ -487,28 +853,46 @@ const BeatStudio = () => {
                     style={{
                       left: clip.startTime * PIXELS_PER_SECOND,
                       width: clip.duration * PIXELS_PER_SECOND,
-                      backgroundColor: clip.color,
+                      backgroundColor: clip.color || track.color,
                       opacity: track.mute ? 0.5 : 1
                     }}
                     onMouseDown={(e) => startDrag(e, track.id, clip.id)}
-                    onClick={() => setSelectedClip({ trackId: track.id, clipId: clip.id })}
+                    onClick={() => {
+                      setSelectedClip({ trackId: track.id, clipId: clip.id });
+                      // Preview clip when clicked
+                      if (clip.url) {
+                        playPadClip(clip);
+                      }
+                    }}
                   >
                     <div className="clip-content">
                       <span className="clip-name">{clip.filename}</span>
                       {clip.loop && <span className="loop-indicator">🔄</span>}
                     </div>
-                    {selectedClip?.trackId === track.id && selectedClip?.clipId === clip.id && (
+                    <div className="clip-controls">
                       <button
-                        className="remove-clip-btn"
+                        className="preview-clip-btn"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          removeClip(track.id, clip.id)
+                          e.stopPropagation();
+                          playPadClip(clip);
                         }}
-                        title="Remove Clip"
+                        title="Preview Clip"
                       >
-                        <FaTrash />
+                        ▶️
                       </button>
-                    )}
+                      {selectedClip?.trackId === track.id && selectedClip?.clipId === clip.id && (
+                        <button
+                          className="remove-clip-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeClip(track.id, clip.id);
+                          }}
+                          title="Remove Clip"
+                        >
+                          <FaTrash />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -518,7 +902,7 @@ const BeatStudio = () => {
           {/* Playhead */}
           <div 
             className="playhead" 
-            style={{ left: playheadPosition }}
+            style={{ left: `${playheadPosition}px` }} 
           />
         </div>
       </div>
