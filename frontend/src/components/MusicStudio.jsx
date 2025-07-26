@@ -369,22 +369,50 @@ const MusicStudio = () => {
     }
   }
 
-  // AI Music Generation
+  // Local music pattern generator
+  const generateLocalMusicPattern = (prompt) => {
+    // Simple pattern generation based on prompt
+    const patterns = {
+      'jazz': ['C4', 'E4', 'G4', 'B4', 'C5', 'B4', 'G4', 'E4'],
+      'rock': ['E4', 'G4', 'A4', 'E4', 'G4', 'A4', 'B4', 'A4'],
+      'classical': ['C4', 'D4', 'E4', 'C4', 'E4', 'F4', 'G4', 'C5'],
+      'blues': ['C4', 'E4', 'G4', 'A4', 'B4', 'A4', 'G4', 'E4'],
+      'electronic': ['C4', 'G3', 'E4', 'G3', 'C4', 'G3', 'E4', 'G3']
+    };
+    
+    // Default pattern
+    let pattern = patterns['jazz'];
+    
+    // Match prompt to a pattern
+    const promptLower = prompt.toLowerCase();
+    if (promptLower.includes('rock')) pattern = patterns['rock'];
+    else if (promptLower.includes('classic')) pattern = patterns['classical'];
+    else if (promptLower.includes('blues')) pattern = patterns['blues'];
+    else if (promptLower.includes('electr')) pattern = patterns['electronic'];
+    
+    return pattern;
+  };
+
+  // AI Music Generation with local fallback
   const generateAIMusic = async () => {
-    if (!aiPrompt.trim()) return
+    if (!aiPrompt.trim()) return;
     
     // Ensure audio context is started
     try {
-      await Tone.start()
+      await Tone.start();
     } catch (err) {
-      console.log('Audio context already started')
+      console.log('Audio context already started');
     }
     
-    setIsGenerating(true)
-    setAiResponse('')
+    setIsGenerating(true);
+    setAiResponse('Generating music...');
     
+    // Try to use the backend AI first
     try {
-      console.log('Sending AI music generation request to:', `${BACKEND_URL}/api/ai`)
+      console.log('Sending AI music generation request to:', `${BACKEND_URL}/api/ai`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
       const response = await fetch(`${BACKEND_URL}/api/ai`, {
         method: 'POST',
@@ -395,40 +423,63 @@ const MusicStudio = () => {
         body: JSON.stringify({
           prompt: `Generate music: ${aiPrompt}`,
           provider: import.meta.env.VITE_DEFAULT_AI_PROVIDER || 'grok'
-        })
-      })
+        }),
+        signal: controller.signal
+      });
       
-      const data = await response.json()
-      console.log('AI response received:', data)
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      
+      const data = await response.json();
+      console.log('AI response received:', data);
       
       if (data.success) {
-        setAiResponse(data.response)
-        
-        // Auto-play a simple melody based on the AI response
-        if (instruments) {
-          setTimeout(() => {
-            const autoPlayNotes = ['C4', 'E4', 'G4', 'B4', 'C5'];
-            let delay = 0;
-            
-            autoPlayNotes.forEach((note, index) => {
-              setTimeout(() => {
-                instruments.piano.triggerAttackRelease(note, '8n')
-              }, delay);
-              delay += 200;
-            });
-          }, 500);
-        }
+        setAiResponse(data.response || 'Here\'s your AI-generated music!');
       } else {
-        setAiResponse('AI music generation is currently unavailable. Try playing instruments manually!')
-        console.error('AI error:', data.error || 'Unknown error')
+        throw new Error(data.error || 'Unknown error from server');
       }
     } catch (error) {
-      console.error('AI Generation Error:', error)
-      setAiResponse('AI music generation is currently unavailable. Try playing instruments manually!')
+      console.warn('Falling back to local music generation:', error);
+      
+      // Use local music generation as fallback
+      try {
+        const pattern = generateLocalMusicPattern(aiPrompt);
+        setAiResponse(`Generated a ${aiPrompt.toLowerCase().includes('rock') ? 'rock' : 
+          aiPrompt.toLowerCase().includes('classic') ? 'classical' : 
+          aiPrompt.toLowerCase().includes('blues') ? 'blues' : 
+          aiPrompt.toLowerCase().includes('electr') ? 'electronic' : 'jazz'} pattern for you!`);
+        
+        // Play the pattern
+        if (instruments) {
+          let delay = 0;
+          pattern.forEach((note, index) => {
+            setTimeout(() => {
+              instruments.piano.triggerAttackRelease(note, '8n');
+            }, delay);
+            delay += 300; // Slightly slower for better audibility
+            
+            // Add some variation with other instruments
+            if (index % 2 === 0 && instruments.drums) {
+              setTimeout(() => {
+                instruments.drums['Hi-Hat'].triggerAttackRelease('16n');
+              }, delay - 50);
+            }
+          });
+          
+          // Add a bass note
+          setTimeout(() => {
+            instruments.piano.triggerAttackRelease('C2', '1n');
+          }, 0);
+        }
+      } catch (localError) {
+        console.error('Local music generation failed:', localError);
+        setAiResponse('AI music generation is currently unavailable. Try playing instruments manually!');
+      }
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
   const renderPianoTab = () => (
     <div className="instrument-panel">
