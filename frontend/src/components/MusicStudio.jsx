@@ -64,8 +64,15 @@ const MusicStudio = () => {
   // Tone.js instruments
   const [instruments, setInstruments] = useState(null)
   
+  // Reference to track if audio is initialized
+  const audioInitializedRef = useRef(false)
+  
   // Initialize Tone.js instruments
   useEffect(() => {
+    if (!audioInitializedRef.current) {
+      initializeAudio()
+      audioInitializedRef.current = true
+    }
     // Ask for audio context permission
     const initializeAudio = async () => {
       try {
@@ -84,19 +91,56 @@ const MusicStudio = () => {
           }
         })
         
-        // Create drums using samples
-        const drumSampler = new Tone.Sampler({
-          urls: {
-            'C2': 'kick.mp3',
-            'D2': 'snare.mp3',
-            'E2': 'hihat.mp3',
-            'F2': 'crash.mp3',
-            'G2': 'tom.mp3',
-            'A2': 'clap.mp3'
-          },
-          baseUrl: 'https://tonejs.github.io/audio/drum-samples/kit-1/',
-          onload: () => console.log('Drum samples loaded')
+        // Create drums using local synthesizers instead of external samples
+        const kickDrum = new Tone.MembraneSynth({
+          pitchDecay: 0.05,
+          octaves: 5,
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4 }
         }).toDestination()
+        
+        const snareDrum = new Tone.NoiseSynth({
+          noise: { type: 'white' },
+          envelope: { attack: 0.001, decay: 0.2, sustain: 0.02, release: 0.8 }
+        }).toDestination()
+        
+        const hihatDrum = new Tone.MetalSynth({
+          frequency: 200,
+          envelope: { attack: 0.001, decay: 0.1, sustain: 0.003, release: 0.3 },
+          harmonicity: 5.1,
+          modulationIndex: 32,
+          resonance: 4000
+        }).toDestination()
+        
+        const crashDrum = new Tone.MetalSynth({
+          frequency: 800,
+          envelope: { attack: 0.001, decay: 0.5, sustain: 0.01, release: 1.5 },
+          harmonicity: 3.1,
+          modulationIndex: 64,
+          resonance: 2000
+        }).toDestination()
+        
+        const tomDrum = new Tone.MembraneSynth({
+          pitchDecay: 0.05,
+          octaves: 2,
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.8 }
+        }).toDestination()
+        
+        const clapDrum = new Tone.NoiseSynth({
+          noise: { type: 'pink' },
+          envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.3 }
+        }).toDestination()
+        
+        // Bundle drum sounds together
+        const drumKit = {
+          'Kick': kickDrum,
+          'Snare': snareDrum,
+          'Hi-Hat': hihatDrum,
+          'Crash': crashDrum,
+          'Tom': tomDrum,
+          'Clap': clapDrum
+        }
         
         // Horn instruments
         const hornSynth = new Tone.PolySynth(Tone.Synth).toDestination()
@@ -125,7 +169,7 @@ const MusicStudio = () => {
         // Store all instruments in state
         setInstruments({
           piano: pianoSynth,
-          drums: drumSampler,
+          drums: drumKit,
           horns: hornSynth,
           fx: fxSynth
         })
@@ -276,16 +320,20 @@ const MusicStudio = () => {
           break
           
         case 'drum':
-          // Map drum pad to sample note
-          const drumNotes = {
-            'Kick': 'C2',
-            'Snare': 'D2',
-            'Hi-Hat': 'E2',
-            'Crash': 'F2',
-            'Tom': 'G2',
-            'Clap': 'A2'
+          // Play the appropriate drum synth
+          if (instruments.drums[note]) {
+            const drumDuration = note === 'Crash' ? '8n' : '16n'
+            if (note === 'Snare' || note === 'Hi-Hat' || note === 'Clap') {
+              instruments.drums[note].triggerAttackRelease(drumDuration)
+            } else {
+              const drumNotes = {
+                'Kick': 'C1',
+                'Tom': 'G2',
+                'Crash': 'C4'
+              }
+              instruments.drums[note].triggerAttackRelease(drumNotes[note] || 'C1', drumDuration)
+            }
           }
-          instruments.drums.triggerAttackRelease(drumNotes[note], '8n')
           break
           
         case 'horn':
@@ -325,10 +373,19 @@ const MusicStudio = () => {
   const generateAIMusic = async () => {
     if (!aiPrompt.trim()) return
     
+    // Ensure audio context is started
+    try {
+      await Tone.start()
+    } catch (err) {
+      console.log('Audio context already started')
+    }
+    
     setIsGenerating(true)
     setAiResponse('')
     
     try {
+      console.log('Sending AI music generation request to:', `${BACKEND_URL}/api/ai`)
+      
       const response = await fetch(`${BACKEND_URL}/api/ai`, {
         method: 'POST',
         headers: {
@@ -342,11 +399,28 @@ const MusicStudio = () => {
       })
       
       const data = await response.json()
+      console.log('AI response received:', data)
       
       if (data.success) {
         setAiResponse(data.response)
+        
+        // Auto-play a simple melody based on the AI response
+        if (instruments) {
+          setTimeout(() => {
+            const autoPlayNotes = ['C4', 'E4', 'G4', 'B4', 'C5'];
+            let delay = 0;
+            
+            autoPlayNotes.forEach((note, index) => {
+              setTimeout(() => {
+                instruments.piano.triggerAttackRelease(note, '8n')
+              }, delay);
+              delay += 200;
+            });
+          }, 500);
+        }
       } else {
         setAiResponse('AI music generation is currently unavailable. Try playing instruments manually!')
+        console.error('AI error:', data.error || 'Unknown error')
       }
     } catch (error) {
       console.error('AI Generation Error:', error)
