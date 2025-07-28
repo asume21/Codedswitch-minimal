@@ -1,0 +1,40 @@
+{
+  "keys": {},
+  "usage": {},
+  "plans": {
+    "free": {
+      "lyric_generations": 5,
+      "music_generations": 2,
+      "code_translations": 10,
+      "vulnerability_scans": 3,
+      "codebeat_generations": 2,
+      "reset_period_days": 30
+    },
+    "pro": {
+      "lyric_generations": 100,
+      "music_generations": 25,
+      "code_translations": 500,
+      "vulnerability_scans": 50,
+      "codebeat_generations": 25,
+      "reset_period_days": 30
+    },
+    "premium": {
+      "lyric_generations": -1,
+      "music_generations": -1,
+      "code_translations": -1,
+      "vulnerability_scans": -1,
+      "codebeat_generations": -1,
+      "reset_period_days": 30
+    },
+    "god": {
+      "lyric_generations": -1,
+      "music_generations": -1,
+      "code_translations": -1,
+      "vulnerability_scans": -1,
+      "codebeat_generations": -1,
+      "reset_period_days": -1,
+      "admin_access": true,
+      "bypass_all_limits": true
+    }
+  }
+}

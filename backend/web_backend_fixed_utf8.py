@@ -1,13 +1,12 @@
 import os
 import time
 import logging
-import uuid
 from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS, cross_origin
 from flask_mail import Mail, Message
 from models import db, EmailSignup
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from api_keys import api_key_manager, require_api_key, create_god_key
 import stripe
 from dotenv import load_dotenv
@@ -110,28 +109,19 @@ def handle_preflight():
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-API-Key'
         return response
 
-# Initialize Redis connection
-import redis
-from rq import Queue
-
-# Initialize Redis connection
-redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
-redis_conn = redis.from_url(redis_url)
-task_queue = Queue(connection=redis_conn)
-
 # Music generation endpoint
 @app.route('/api/generate-music', methods=['POST', 'OPTIONS'])
 @cross_origin()
 def generate_music():
     """
-    Generate music using the MusicGen model with RQ worker.
+    Generate music using the MusicGen model.
     
     Request JSON:
     - prompt: Text description of the music to generate (required)
     - duration: Duration in seconds (1-120, default: 30)
     
     Returns:
-    - JSON with job_id and status (202 Accepted)
+    - Audio/WAV file on success (200 OK)
     - JSON error on failure (400/500)
     """
     if request.method == 'OPTIONS':
@@ -145,112 +135,34 @@ def generate_music():
         return jsonify({"error": "Prompt is required"}), 400
     
     try:
-        # Generate a unique job ID
-        job_id = str(uuid.uuid4())
+        # Lazy import to avoid loading model on startup
+        from musicgen_backend import generate_instrumental
         
         # Log the start of generation
-        app.logger.info(f"Queueing music generation job {job_id} for prompt: {prompt[:100]}... (duration: {duration}s)")
+        app.logger.info(f"Generating music for prompt: {prompt[:100]}... (duration: {duration}s)")
         
-        # Enqueue the job
-        from worker import generate_task
-        task_queue.enqueue(
-            generate_task,
-            job_id=job_id,
-            lyrics=prompt,
-            prompt=prompt,
-            duration=duration,
-            job_timeout='5m',  # 5 minute timeout
-            result_ttl=3600,   # Keep results for 1 hour
-            failure_ttl=3600   # Keep failed jobs for 1 hour
+        # Generate the audio file with both lyrics and prompt parameters
+        output_path = generate_instrumental(lyrics=prompt, prompt=prompt, duration=duration)
+        
+        if not output_path or not os.path.exists(output_path):
+            raise Exception("Failed to generate audio file - no output file was created")
+            
+        # Log successful generation
+        file_size = os.path.getsize(output_path) / (1024 * 1024)  # Size in MB
+        app.logger.info(f"Successfully generated music: {output_path} ({file_size:.2f} MB)")
+        
+        # Return the audio file directly
+        return send_file(
+            output_path,
+            mimetype='audio/wav',
+            as_attachment=True,
+            download_name=f"codedswitch_music_{int(time.time())}.wav"
         )
         
-        # Initialize job status in Redis
-        redis_conn.hset(f"job:{job_id}", mapping={
-            "status": "queued",
-            "created_at": str(datetime.utcnow())
-        })
-        
-        return jsonify({
-            "status": "queued",
-            "job_id": job_id,
-            "message": "Music generation started. Poll /api/music-status/{job_id} for status."
-        }), 202
-        
     except Exception as e:
-        error_msg = f"Error queuing music generation: {str(e)}"
+        error_msg = f"Error generating music: {str(e)}"
         app.logger.error(error_msg, exc_info=True)
         return jsonify({"error": error_msg}), 500
-
-@app.route('/api/music-status/<job_id>', methods=['GET'])
-@cross_origin()
-def check_music_status(job_id):
-    """
-    Check the status of a music generation job.
-    
-    Returns:
-    - JSON with job status and result/error if available
-    """
-    job_data = redis_conn.hgetall(f"job:{job_id}")
-    
-    if not job_data:
-        return jsonify({"error": "Job not found"}), 404
-    
-    # Convert byte strings to regular strings
-    status_data = {k.decode('utf-8'): v.decode('utf-8') for k, v in job_data.items()}
-    
-    if status_data.get("status") == "finished":
-        file_path = status_data.get("filePath")
-        if file_path and os.path.exists(file_path):
-            return jsonify({
-                "status": "completed",
-                "file_url": f"/api/music-download/{job_id}",
-                "created_at": status_data.get("created_at")
-            })
-        else:
-            return jsonify({
-                "status": "error",
-                "message": "Generated file not found",
-                "created_at": status_data.get("created_at")
-            }), 500
-    elif status_data.get("status") == "failed":
-        return jsonify({
-            "status": "error",
-            "message": status_data.get("error", "Music generation failed"),
-            "created_at": status_data.get("created_at")
-        }), 500
-    else:
-        return jsonify({
-            "status": status_data.get("status", "pending"),
-            "created_at": status_data.get("created_at")
-        })
-
-@app.route('/api/music-download/<job_id>', methods=['GET'])
-@cross_origin()
-def download_music(job_id):
-    """
-    Download the generated music file.
-    """
-    job_data = redis_conn.hgetall(f"job:{job_id}")
-    
-    if not job_data:
-        return jsonify({"error": "Job not found"}), 404
-    
-    status_data = {k.decode('utf-8'): v.decode('utf-8') for k, v in job_data.items()}
-    
-    if status_data.get("status") != "finished":
-        return jsonify({"error": "Music generation not complete"}), 404
-    
-    file_path = status_data.get("filePath")
-    if not file_path or not os.path.exists(file_path):
-        return jsonify({"error": "Generated file not found"}), 404
-    
-    # Return the audio file
-    return send_file(
-        file_path,
-        mimetype='audio/wav',
-        as_attachment=True,
-        download_name=f"codedswitch_music_{job_id}.wav"
-    )
 
 # Add other endpoints here...
 

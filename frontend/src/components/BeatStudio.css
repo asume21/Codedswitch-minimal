@@ -78,6 +78,31 @@
   color: #aaa;
 }
 
+.beat-studio {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Default content styles */
+.default-content {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin: 2rem auto;
+  max-width: 600px;
+}
+
+.default-content h2 {
+  margin-top: 0;
+  color: #1db954;
+}
+
+.default-content p {
+  margin-bottom: 1.5rem;
+}
+
 /* Pad Grid Styles */
 .pad-grid {
   display: grid;
@@ -184,7 +209,17 @@
 }
 
 /* Enhanced sequencer styles */
-.playhead-marker {
+.sequencer {
+  margin-top: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: rgba(30, 30, 30, 0.5);
+  position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.playhead {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -192,6 +227,13 @@
   background-color: #ff0000;
   pointer-events: none;
   z-index: 10;
+  box-shadow: 0 0 5px #ff0000;
+  animation: pulsePlayhead 1s infinite alternate;
+}
+
+@keyframes pulsePlayhead {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
 }
 
 .enhanced-sequencer {
@@ -504,19 +546,17 @@
 
 .sequencer-clip {
   position: absolute;
-  top: 10px;
-  height: 60px;
-  min-width: 80px;
-  border-radius: 6px;
-  cursor: grab;
-  user-select: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  height: 80%;
+  top: 10%;
+  background-color: #1db954;
+  border-radius: 4px;
   overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-.sequencer-clip:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
@@ -537,6 +577,7 @@
   flex-direction: column;
   justify-content: space-between;
   pointer-events: none;
+  flex: 1;
 }
 
 .clip-name {
@@ -554,10 +595,23 @@
   opacity: 0.8;
 }
 
-.remove-clip-btn {
+.clip-controls {
   position: absolute;
   top: 4px;
   right: 4px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: auto;
+}
+
+.sequencer-clip:hover .clip-controls {
+  opacity: 1;
+}
+
+.preview-clip-btn,
+.remove-clip-btn {
   width: 20px;
   height: 20px;
   background: rgba(0, 0, 0, 0.7);
@@ -565,18 +619,19 @@
   border-radius: 50%;
   color: #fff;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.7rem;
-  pointer-events: auto;
+  padding: 0;
 }
 
-.sequencer-clip:hover .remove-clip-btn {
-  opacity: 1;
+.preview-clip-btn:hover {
+  background: rgba(29, 185, 84, 0.8);
+  transform: scale(1.1);
 }
+
+
 
 .remove-clip-btn:hover {
   background: rgba(255, 59, 48, 0.8);

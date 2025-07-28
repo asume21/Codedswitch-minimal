@@ -60,6 +60,9 @@ const MusicStudio = () => {
   const [aiResponse, setAiResponse] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [volume, setVolume] = useState(0.7)
+  const [audioReady, setAudioReady] = useState(false)
+  const [audioError, setAudioError] = useState(null)
   
   // Tone.js instruments
   const [instruments, setInstruments] = useState(null)
@@ -67,119 +70,126 @@ const MusicStudio = () => {
   // Reference to track if audio is initialized
   const audioInitializedRef = useRef(false)
   
-  // Initialize Tone.js instruments
-  useEffect(() => {
-    if (!audioInitializedRef.current) {
-      initializeAudio()
-      audioInitializedRef.current = true
-    }
-    // Ask for audio context permission
-    const initializeAudio = async () => {
-      try {
-        // Start audio context on user interaction
-        await Tone.start()
-        console.log('Audio context started')
-        
-        // Create instruments
-        const pianoSynth = new Tone.PolySynth(Tone.Synth).toDestination()
-        pianoSynth.set({
-          envelope: {
-            attack: 0.02,
-            decay: 0.1,
-            sustain: 0.3,
-            release: 1
-          }
-        })
-        
-        // Create drums using local synthesizers instead of external samples
-        const kickDrum = new Tone.MembraneSynth({
-          pitchDecay: 0.05,
-          octaves: 5,
-          oscillator: { type: 'sine' },
-          envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4 }
-        }).toDestination()
-        
-        const snareDrum = new Tone.NoiseSynth({
-          noise: { type: 'white' },
-          envelope: { attack: 0.001, decay: 0.2, sustain: 0.02, release: 0.8 }
-        }).toDestination()
-        
-        const hihatDrum = new Tone.MetalSynth({
-          frequency: 200,
-          envelope: { attack: 0.001, decay: 0.1, sustain: 0.003, release: 0.3 },
-          harmonicity: 5.1,
-          modulationIndex: 32,
-          resonance: 4000
-        }).toDestination()
-        
-        const crashDrum = new Tone.MetalSynth({
-          frequency: 800,
-          envelope: { attack: 0.001, decay: 0.5, sustain: 0.01, release: 1.5 },
-          harmonicity: 3.1,
-          modulationIndex: 64,
-          resonance: 2000
-        }).toDestination()
-        
-        const tomDrum = new Tone.MembraneSynth({
-          pitchDecay: 0.05,
-          octaves: 2,
-          oscillator: { type: 'sine' },
-          envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.8 }
-        }).toDestination()
-        
-        const clapDrum = new Tone.NoiseSynth({
-          noise: { type: 'pink' },
-          envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.3 }
-        }).toDestination()
-        
-        // Bundle drum sounds together
-        const drumKit = {
-          'Kick': kickDrum,
-          'Snare': snareDrum,
-          'Hi-Hat': hihatDrum,
-          'Crash': crashDrum,
-          'Tom': tomDrum,
-          'Clap': clapDrum
+  // Initialize audio function - now called on user interaction
+  const initializeAudio = async () => {
+    if (audioInitializedRef.current) return;
+    
+    console.log('Initializing audio...')
+    setAudioError(null);
+    
+    try {
+      // Start audio context on user interaction
+      await Tone.start();
+      console.log('Audio context started');
+      audioInitializedRef.current = true;
+      
+      // Set master volume
+      Tone.Destination.volume.value = Tone.gainToDb(volume);
+      
+      // Create piano synth
+      const pianoSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+      pianoSynth.set({
+        envelope: {
+          attack: 0.02,
+          decay: 0.1,
+          sustain: 0.3,
+          release: 1
         }
-        
-        // Horn instruments
-        const hornSynth = new Tone.PolySynth(Tone.Synth).toDestination()
-        hornSynth.set({
-          oscillator: { type: 'sawtooth' },
-          envelope: {
-            attack: 0.1,
-            decay: 0.2,
-            sustain: 0.6,
-            release: 0.8
-          }
-        })
-        
-        // Sound FX synth
-        const fxSynth = new Tone.PolySynth(Tone.Synth).toDestination()
-        fxSynth.set({
-          oscillator: { type: 'sine' },
-          envelope: {
-            attack: 0.01,
-            decay: 0.1,
-            sustain: 0.1,
-            release: 0.5
-          }
-        })
-        
-        // Store all instruments in state
-        setInstruments({
-          piano: pianoSynth,
-          drums: drumKit,
-          horns: hornSynth,
-          fx: fxSynth
-        })
-      } catch (error) {
-        console.error('Failed to start audio context:', error)
-      }
+      });
+      
+      // Create drums using local synthesizers instead of external samples
+      const kickDrum = new Tone.MembraneSynth({
+        pitchDecay: 0.05,
+        octaves: 5,
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4 }
+      }).toDestination();
+      
+      const snareDrum = new Tone.NoiseSynth({
+        noise: { type: 'white' },
+        envelope: { attack: 0.001, decay: 0.2, sustain: 0.02, release: 0.8 }
+      }).toDestination();
+      
+      const hihatDrum = new Tone.MetalSynth({
+        frequency: 200,
+        envelope: { attack: 0.001, decay: 0.1, sustain: 0.003, release: 0.3 },
+        harmonicity: 5.1,
+        modulationIndex: 32,
+        resonance: 4000
+      }).toDestination();
+      
+      const crashDrum = new Tone.MetalSynth({
+        frequency: 800,
+        envelope: { attack: 0.001, decay: 0.5, sustain: 0.01, release: 1.5 },
+        harmonicity: 3.1,
+        modulationIndex: 64,
+        resonance: 2000
+      }).toDestination();
+      
+      const tomDrum = new Tone.MembraneSynth({
+        pitchDecay: 0.05,
+        octaves: 2,
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.8 }
+      }).toDestination();
+      
+      const clapDrum = new Tone.NoiseSynth({
+        noise: { type: 'pink' },
+        envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.3 }
+      }).toDestination();
+      
+      // Bundle drum sounds together
+      const drumKit = {
+        'Kick': kickDrum,
+        'Snare': snareDrum,
+        'Hi-Hat': hihatDrum,
+        'Crash': crashDrum,
+        'Tom': tomDrum,
+        'Clap': clapDrum
+      };
+      
+      // Horn instruments
+      const hornSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+      hornSynth.set({
+        oscillator: { type: 'sawtooth' },
+        envelope: {
+          attack: 0.1,
+          decay: 0.2,
+          sustain: 0.6,
+          release: 0.8
+        }
+      });
+      
+      // Sound FX synth
+      const fxSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+      fxSynth.set({
+        oscillator: { type: 'sine' },
+        envelope: {
+          attack: 0.01,
+          decay: 0.1,
+          sustain: 0.1,
+          release: 0.5
+        }
+      });
+      
+      // Store all instruments in state
+      setInstruments({
+        piano: pianoSynth,
+        drums: drumKit,
+        horns: hornSynth,
+        fx: fxSynth
+      });
+      setAudioReady(true);
+    } catch (error) {
+      console.error('Failed to start audio context:', error);
+      setAudioError(error.message);
+      audioInitializedRef.current = false;
     }
-    
-    initializeAudio()
-    
+  };
+
+  // Initialize audio on component mount with cleanup
+  useEffect(() => {
+    // Cleanup function for when component unmounts
     return () => {
       // Dispose instruments when component unmounts
       if (instruments) {
@@ -393,7 +403,60 @@ const MusicStudio = () => {
     return pattern;
   };
 
-  // AI Music Generation with local fallback
+  // Poll job status
+  const pollJobStatus = async (jobId, maxAttempts = 30, interval = 2000) => {
+    let attempts = 0;
+    
+    const checkStatus = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/music-status/${jobId}`);
+        if (!response.ok) throw new Error('Failed to check job status');
+        
+        const data = await response.json();
+        
+        if (data.status === 'completed') {
+          // Play the generated audio
+          const audio = new Audio(`${BACKEND_URL}${data.file_url}`);
+          audio.play().catch(e => console.error('Error playing audio:', e));
+          setAiResponse('AI music generated and playing!');
+          return true;
+        } else if (data.status === 'error') {
+          throw new Error(data.message || 'Failed to generate music');
+        }
+        
+        // Continue polling
+        attempts++;
+        if (attempts >= maxAttempts) {
+          throw new Error('Music generation timed out');
+        }
+        
+        return false;
+      } catch (error) {
+        console.error('Error checking job status:', error);
+        throw error;
+      }
+    };
+    
+    // Initial check
+    if (await checkStatus()) return;
+    
+    // Poll with interval
+    return new Promise((resolve, reject) => {
+      const poll = setInterval(async () => {
+        try {
+          if (await checkStatus()) {
+            clearInterval(poll);
+            resolve();
+          }
+        } catch (error) {
+          clearInterval(poll);
+          reject(error);
+        }
+      }, interval);
+    });
+  };
+
+  // AI Music Generation with RQ worker
   const generateAIMusic = async () => {
     if (!aiPrompt.trim()) return;
     
@@ -405,61 +468,49 @@ const MusicStudio = () => {
     }
     
     setIsGenerating(true);
-    setAiResponse('Generating music...');
+    setAiResponse('Starting music generation...');
     
-    // Try to use the backend AI first
     try {
-      console.log('Sending AI music generation request to:', `${BACKEND_URL}/api/ai`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
-      const response = await fetch(`${BACKEND_URL}/api/ai`, {
+      // Start the music generation job
+      const response = await fetch(`${BACKEND_URL}/api/generate-music`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-API-Key': localStorage.getItem('apiKey') || ''
         },
         body: JSON.stringify({
-          prompt: `Generate music: ${aiPrompt}`,
-          provider: import.meta.env.VITE_DEFAULT_AI_PROVIDER || 'grok'
-        }),
-        signal: controller.signal
+          prompt: aiPrompt,
+          duration: 15  // 15 seconds of audio
+        })
       });
       
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      
-      const data = await response.json();
-      console.log('AI response received:', data);
-      
-      if (data.success) {
-        setAiResponse(data.response || 'Here\'s your AI-generated music!');
-      } else {
-        throw new Error(data.error || 'Unknown error from server');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to start music generation');
       }
-    } catch (error) {
-      console.warn('Falling back to local music generation:', error);
       
-      // Use local music generation as fallback
+      const { job_id } = await response.json();
+      setAiResponse('Generating your music... This may take a minute.');
+      
+      // Start polling for job completion
+      await pollJobStatus(job_id);
+      
+    } catch (error) {
+      console.error('Music generation failed:', error);
+      
+      // Fallback to local music generation
       try {
+        setAiResponse('AI generation failed. Playing a local pattern instead...');
         const pattern = generateLocalMusicPattern(aiPrompt);
-        setAiResponse(`Generated a ${aiPrompt.toLowerCase().includes('rock') ? 'rock' : 
-          aiPrompt.toLowerCase().includes('classic') ? 'classical' : 
-          aiPrompt.toLowerCase().includes('blues') ? 'blues' : 
-          aiPrompt.toLowerCase().includes('electr') ? 'electronic' : 'jazz'} pattern for you!`);
         
-        // Play the pattern
         if (instruments) {
           let delay = 0;
           pattern.forEach((note, index) => {
             setTimeout(() => {
               instruments.piano.triggerAttackRelease(note, '8n');
             }, delay);
-            delay += 300; // Slightly slower for better audibility
+            delay += 300;
             
-            // Add some variation with other instruments
             if (index % 2 === 0 && instruments.drums) {
               setTimeout(() => {
                 instruments.drums['Hi-Hat'].triggerAttackRelease('16n');
@@ -467,14 +518,13 @@ const MusicStudio = () => {
             }
           });
           
-          // Add a bass note
           setTimeout(() => {
             instruments.piano.triggerAttackRelease('C2', '1n');
           }, 0);
         }
       } catch (localError) {
         console.error('Local music generation failed:', localError);
-        setAiResponse('AI music generation is currently unavailable. Try playing instruments manually!');
+        setAiResponse('Music generation is currently unavailable. Try playing instruments manually!');
       }
     } finally {
       setIsGenerating(false);
@@ -628,6 +678,54 @@ const MusicStudio = () => {
       </div>
     </div>
   )
+
+  // Audio initialization overlay
+  if (!audioReady) {
+    return (
+      <div className="audio-init-overlay" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: 'white',
+        textAlign: 'center',
+        padding: '2rem'
+      }}>
+        <h1>🎵 Welcome to Music Studio</h1>
+        <p>Click the button below to enable audio features</p>
+        <button 
+          onClick={initializeAudio}
+          style={{
+            padding: '1rem 2rem',
+            fontSize: '1.2rem',
+            background: 'white',
+            color: '#667eea',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            marginTop: '1rem',
+            transition: 'transform 0.2s',
+            ':hover': {
+              transform: 'scale(1.05)'
+            },
+            ':active': {
+              transform: 'scale(0.98)'
+            }
+          }}
+          disabled={audioInitializedRef.current}
+        >
+          {audioInitializedRef.current ? 'Initializing...' : 'Start Audio'}
+        </button>
+        {audioError && (
+          <p style={{ color: '#ff6b6b', marginTop: '1rem' }}>
+            Error: {audioError}. Please try again or check your browser's audio settings.
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="ai-music-studio">
