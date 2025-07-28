@@ -25,7 +25,7 @@ const VulnerabilityScanner = React.lazy(() => import('./components/Vulnerability
 const AdminPanel = React.lazy(() => import('./components/AdminPanel'))
 const SpessaSynthEmbed = React.lazy(() => import('./components/SpessaSynthEmbed'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
-const GeminiAITools = React.lazy(() => import('./components/GeminiAITools'));
+// const GeminiAITools = React.lazy(() => import('./components/GeminiAITools'));  // Temporarily disabled for build
 
 function AppContent() {
   const [pricingPlans, setPricingPlans] = useState([]);
@@ -195,12 +195,14 @@ function AppContent() {
             >
               Code Translator
             </button>
+            {/* Temporarily disabled for build
             <button
               className={`nav-link ${isActive('/gemini-ai') ? 'active' : ''}`}
               onClick={() => navigate('/gemini-ai')}
             >
               Gemini AI
             </button>
+            */}
             <button
               className={`nav-link ${isActive('/lyric-lab') ? 'active' : ''}`}
               onClick={() => navigate('/lyric-lab')}
