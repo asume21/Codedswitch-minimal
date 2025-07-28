@@ -566,6 +566,47 @@ const snapNotesToScale = (notes, key = 'C', scaleType = 'major') => {
   });
 };
 
+/**
+ * Create a chord from a root note and chord type
+ * @param {string} rootNote - Root note of the chord
+ * @param {string} chordType - Type of chord
+ * @param {number} octave - Base octave
+ * @returns {Array} Array of MIDI note numbers
+ */
+const createChord = (rootNote, chordType = 'maj', octave = 4) => {
+  return getChordNotes(rootNote, chordType, octave);
+};
+
+/**
+ * Create a musical pattern from parameters
+ * @param {Object} options - Pattern options
+ * @returns {Array} Array of pattern objects
+ */
+const createPattern = (options = {}) => {
+  const {
+    key = 'C',
+    scale = 'major',
+    length = 8,
+    complexity = 0.5
+  } = options;
+  
+  // Generate a simple chord progression first
+  const chordProgression = generateChordProgression(key, scale, 'neutral', Math.ceil(length / 2));
+  
+  // Generate melodic pattern from the progression
+  return generateMelodicPattern(chordProgression, complexity);
+};
+
+/**
+ * Convert note name to MIDI number (alias for getMidiNote)
+ * @param {string} noteName - Note name
+ * @param {number} octave - Octave number
+ * @returns {number} MIDI note number
+ */
+const noteToMidi = (noteName, octave = 4) => {
+  return getMidiNote(noteName, octave);
+};
+
 export {
   NOTES,
   SCALES,
@@ -584,5 +625,8 @@ export {
   quantizeNotes,
   snapNotesToScale,
   isNoteInScale,
-  scalePositionToMidi
+  scalePositionToMidi,
+  createChord,
+  createPattern,
+  noteToMidi
 };

@@ -13,6 +13,7 @@ import Success from './components/Success'
 import About from './components/About'
 import Features from './components/Features'
 
+
 // Dynamic imports for heavy pages
 const LyricLab = React.lazy(() => import('./components/LyricLab'))
 const CodeTranslator = React.lazy(() => import('./components/CodeTranslator'))
@@ -24,6 +25,7 @@ const VulnerabilityScanner = React.lazy(() => import('./components/Vulnerability
 const AdminPanel = React.lazy(() => import('./components/AdminPanel'))
 const SpessaSynthEmbed = React.lazy(() => import('./components/SpessaSynthEmbed'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
+const GeminiAITools = React.lazy(() => import('./components/GeminiAITools'));
 
 function AppContent() {
   const [pricingPlans, setPricingPlans] = useState([]);
@@ -75,6 +77,10 @@ function AppContent() {
     '/codebeat-studio': {
       title: 'CodeBeat Studio | CodedSwitch',
       description: 'Code your music with intuitive commands - where programming meets beat making.'
+    },
+    '/gemini-ai': {
+      title: 'Gemini AI Tools | CodedSwitch',
+      description: 'Access powerful AI tools for text and code generation powered by Google\'s Gemini AI.'
     }
   };
 
@@ -190,6 +196,12 @@ function AppContent() {
               Code Translator
             </button>
             <button
+              className={`nav-link ${isActive('/gemini-ai') ? 'active' : ''}`}
+              onClick={() => navigate('/gemini-ai')}
+            >
+              Gemini AI
+            </button>
+            <button
               className={`nav-link ${isActive('/lyric-lab') ? 'active' : ''}`}
               onClick={() => navigate('/lyric-lab')}
             >
@@ -285,7 +297,11 @@ function AppContent() {
           <Route path="/code-translator" element={<div className="code-translator-section"><CodeTranslator userSubscription={{ plan: userPlan }} /></div>} />
           <Route path="/lyric-lab" element={<div className="lyric-lab-section"><LyricLab userPlan={userPlan} onUsageUpdate={(usage) => {console.log('Lyric usage updated:', usage);}} /></div>} />
           <Route path="/beat-studio" element={<BeatStudio />} />
-          <Route path="/music-studio" element={<MusicStudio />} />
+          <Route path="/music-studio" element={
+            <Suspense fallback={<div>Loading...</div>}>
+              <MusicStudio />
+            </Suspense>
+          } />
           <Route path="/codebeat-studio" element={<CodeBeatStudio />} />
           <Route path="/assistant" element={<Assistant />} />
           <Route path="/vulnerability-scanner" element={<VulnerabilityScanner />} />
