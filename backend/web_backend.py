@@ -11,7 +11,18 @@ from datetime import datetime, timedelta
 from api_keys import api_key_manager, require_api_key, create_god_key
 import stripe
 from dotenv import load_dotenv
-from gemini_service import gemini_service
+# Import Gemini service only if the API key is available
+try:
+    from gemini_service import gemini_service, GEMINI_AVAILABLE
+    if GEMINI_AVAILABLE and hasattr(gemini_service, 'generate_text'):
+        print("Gemini service is available")
+    else:
+        print("Gemini service is not properly configured")
+        GEMINI_AVAILABLE = False
+except (ImportError, ValueError, AttributeError) as e:
+    print(f"Warning: Gemini service not available: {e}")
+    GEMINI_AVAILABLE = False
+    gemini_service = None
 import requests
 
 # Load environment variables
@@ -360,6 +371,8 @@ def ai_proxy():
     if provider == 'grok':
         return handle_grok_request(prompt, max_tokens)
     elif provider == 'gemini':
+        if not GEMINI_AVAILABLE:
+            return jsonify({'error': 'Gemini provider is not available. Please check server configuration.'}), 503
         return handle_gemini_request(prompt, max_tokens, data.get('temperature'))
     else:
         return jsonify({'error': f'Unsupported provider: {provider}. Use "grok" or "gemini"'}), 400

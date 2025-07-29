@@ -7,8 +7,14 @@ import os
 import logging
 import json
 from typing import Optional, Dict, Any, Union, cast
-import google.generativeai as genai
-from google.generativeai.types import GenerationConfig
+try:
+    import google.generativeai as genai
+    from google.generativeai.types import GenerationConfig
+    GENAI_AVAILABLE = True
+except ImportError:
+    genai = None
+    GenerationConfig = None
+    GENAI_AVAILABLE = False
 
 # Configure logging
 
@@ -25,16 +31,23 @@ class GeminiService:
         Args:
             api_key: Optional API key. If not provided, will use GEMINI_API_KEY from environment.
         """
+        if not GENAI_AVAILABLE:
+            raise ImportError("Google Generative AI package not available")
+            
         self.api_key = api_key or os.getenv('GEMINI_API_KEY')
         if not self.api_key:
             raise ValueError("Gemini API key not provided and GEMINI_API_KEY environment variable not set")
         
-        # Configure the API key first
-        genai.configure(api_key=self.api_key)
-        
-        # Initialize the model
-        self.model = genai.GenerativeModel('gemini-pro')
-        logger.info("Gemini service initialized successfully")
+        try:
+            # Configure the API key first
+            genai.configure(api_key=self.api_key)
+            
+            # Initialize the model
+            self.model = genai.GenerativeModel('gemini-pro')
+            logger.info("Gemini service initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Gemini service: {e}")
+            raise
     
     def generate_text(self, prompt: str, **generation_config) -> Dict[str, Any]:
         """Generate text using the Gemini API.
@@ -45,7 +58,13 @@ class GeminiService:
             
         Returns:
             Dict containing the generated text and metadata
+            
+        Raises:
+            ImportError: If the Google Generative AI package is not available
         """
+        if not GENAI_AVAILABLE or not hasattr(self, 'model') or self.model is None:
+            raise ImportError("Google Generative AI service is not available")
+            
         try:
             # Create generation config
             config = GenerationConfig(
@@ -125,7 +144,13 @@ class GeminiService:
         return response
 
 # Global instance for easier import
-gemini_service = GeminiService()
+try:
+    gemini_service = GeminiService()
+    GEMINI_AVAILABLE = True
+except (ValueError, ImportError) as e:
+    print(f"Warning: Could not initialize Gemini service: {e}")
+    gemini_service = None
+    GEMINI_AVAILABLE = False
 
 # Example usage
 if __name__ == "__main__":
