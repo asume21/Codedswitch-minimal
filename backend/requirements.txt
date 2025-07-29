@@ -9,6 +9,9 @@ gunicorn==21.2.0
 numpy<2.0.0
 stripe==7.12.0
 
+# Google Generative AI
+google-generativeai>=0.3.0
+
 # Dependencies for MusicGen audio generation - torch installed separately with CPU optimization
 # torch and torchaudio installed via Dockerfile from PyTorch CPU index
 audiocraft @ git+https://github.com/facebookresearch/audiocraft.git
@@ -16,4 +19,3 @@ soundfile==0.12.1
 sounddevice==0.4.6
 redis==4.6.0
 rq==1.15.1
-

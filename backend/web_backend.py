@@ -12,6 +12,7 @@ from api_keys import api_key_manager, require_api_key, create_god_key
 import stripe
 from dotenv import load_dotenv
 from gemini_service import gemini_service
+import requests
 
 # Load environment variables
 load_dotenv()
@@ -330,6 +331,91 @@ def gemini_generate_code():
             'error': 'An error occurred while generating code',
             'details': str(e) if app.config.get('DEBUG') else None
         }), 500
+
+# AI Provider Endpoints
+
+@app.route('/api/ai', methods=['POST', 'OPTIONS'])
+def ai_proxy():
+    """
+    Endpoint for AI completions supporting multiple providers.
+    
+    Request JSON:
+    - prompt: The user's input prompt (required)
+    - provider: 'grok' or 'gemini' (defaults to 'grok' if not specified)
+    - max_tokens: Maximum tokens in response (default: 200)
+    - temperature: Controls randomness (0.0 to 1.0)
+    
+    Returns:
+    - JSON with AI response and metadata
+    """
+    data = request.json or {}
+    prompt = data.get('prompt')
+    provider = data.get('provider', 'grok').lower()
+    max_tokens = data.get('max_tokens', 200)
+    
+    if not prompt:
+        return jsonify({'error': 'Missing prompt'}), 400
+    
+    # Route to the appropriate provider
+    if provider == 'grok':
+        return handle_grok_request(prompt, max_tokens)
+    elif provider == 'gemini':
+        return handle_gemini_request(prompt, max_tokens, data.get('temperature'))
+    else:
+        return jsonify({'error': f'Unsupported provider: {provider}. Use "grok" or "gemini"'}), 400
+
+def handle_grok_request(prompt, max_tokens):
+    """Handle Grok AI API requests."""
+    grok_api_key = os.environ.get('Grok_API_Key')
+    if not grok_api_key:
+        return jsonify({'error': 'Grok API key not configured'}), 500
+        
+    try:
+        response = requests.post(
+            "https://api.x.ai/v1/chat/completions",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {grok_api_key}"
+            },
+            json={
+                "model": os.environ.get("DEFAULT_GROK_MODEL", "grok-3-mini"),
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": max_tokens
+            },
+            timeout=60
+        )
+        response.raise_for_status()
+        result = response.json()
+        content = result['choices'][0]['message']['content']
+        return jsonify({
+            "response": content,
+            "provider": "grok",
+            "model": result.get('model', 'grok-3-mini'),
+            "raw": result
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'provider': 'grok'}), 500
+
+def handle_gemini_request(prompt, max_tokens, temperature=None):
+    """Handle Gemini AI API requests."""
+    try:
+        # Configure generation parameters
+        gen_config = {
+            'max_output_tokens': min(max_tokens, 2048),  # Cap at 2048 tokens
+            'temperature': min(max(0, float(temperature or 0.7)), 1.0)  # Clamp to 0-1 range
+        }
+        
+        # Generate response using gemini_service
+        response = gemini_service.generate_text(prompt, **gen_config)
+        
+        return jsonify({
+            "response": response.get('text', ''),
+            "provider": "gemini",
+            "model": "gemini-pro",
+            "raw": response
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'provider': 'gemini'}), 500
 
 # Add other endpoints here...
 
