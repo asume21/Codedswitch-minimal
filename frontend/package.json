@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --base=/ && cp public/_redirects dist/ && cp static.json dist/",
+    "build": "vite build --base=/ && node -e \"const fs=require('fs'); fs.copyFileSync('public/_redirects', 'dist/_redirects'); fs.copyFileSync('static.json', 'dist/static.json');\"",
     "preview": "vite preview --host",
     "deploy": "npm run build"
   },
@@ -17,12 +17,17 @@
     "@fortawesome/react-fontawesome": "^0.2.3",
     "@mui/icons-material": "^5.14.10",
     "@mui/material": "^5.14.10",
+    "@testing-library/jest-dom": "^6.1.4",
+    "@testing-library/react": "^13.4.0",
+    "@vitejs/plugin-react-swc": "^3.11.0",
     "axios": "^1.5.0",
     "formik": "^2.4.3",
+    "notistack": "^3.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^4.11.0",
     "react-router-dom": "^6.15.0",
+    "react-syntax-highlighter": "^15.5.0",
     "tone": "^14.7.77",
     "yup": "^1.2.0"
   },
@@ -30,6 +35,7 @@
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react": "^4.0.4",
+    "terser": "^5.43.1",
     "vite": "^4.4.9"
   }
 }

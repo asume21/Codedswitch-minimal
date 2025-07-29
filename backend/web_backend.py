@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from api_keys import api_key_manager, require_api_key, create_god_key
 import stripe
 from dotenv import load_dotenv
+from gemini_service import gemini_service
 
 # Load environment variables
 load_dotenv()
@@ -97,160 +98,238 @@ def index():
     return jsonify({"status": "ok", "message": "CodedSwitch backend is running"})
 
 @app.route('/api/health', methods=['GET', 'OPTIONS'])
+@cross_origin()
 def health():
-    return jsonify({"status": "ok", "message": "API healthy"})
+    """Health check endpoint"""
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    
+    return jsonify({
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "version": "1.0.0"
+    })
 
-# CORS preflight handler
 @app.before_request
 def handle_preflight():
-    if request.method == "OPTIONS":
-        response = jsonify({})
-        response.headers['Access-Control-Allow-Origin'] = '*'
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-API-Key'
-        return response
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
 
-# Initialize Redis connection
-import redis
-from rq import Queue
-
-# Initialize Redis connection
-redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
-redis_conn = redis.from_url(redis_url)
-task_queue = Queue(connection=redis_conn)
-
-# Music generation endpoint
+# Music generation endpoints
 @app.route('/api/generate-music', methods=['POST', 'OPTIONS'])
 @cross_origin()
 def generate_music():
     """
-    Generate music using the MusicGen model with RQ worker.
+    Generate music using AI.
     
     Request JSON:
-    - prompt: Text description of the music to generate (required)
-    - duration: Duration in seconds (1-120, default: 30)
+    - prompt: Description of the music to generate (required)
+    - duration: Duration in seconds (default: 10)
+    - model: Model to use (default: 'facebook/musicgen-small')
     
     Returns:
-    - JSON with job_id and status (202 Accepted)
-    - JSON error on failure (400/500)
+    - JSON with job ID for tracking
     """
     if request.method == 'OPTIONS':
         return _build_cors_preflight_response()
-        
-    data = request.json or {}
-    prompt = data.get('prompt', '').strip()
-    duration = min(max(int(data.get('duration', 30)), 1), 120)  # 1-120 seconds
     
-    if not prompt:
+    data = request.get_json()
+    if not data or 'prompt' not in data:
         return jsonify({"error": "Prompt is required"}), 400
     
     try:
         # Generate a unique job ID
         job_id = str(uuid.uuid4())
         
-        # Log the start of generation
-        app.logger.info(f"Queueing music generation job {job_id} for prompt: {prompt[:100]}... (duration: {duration}s)")
-        
-        # Enqueue the job
-        from worker import generate_task
-        task_queue.enqueue(
-            generate_task,
-            job_id=job_id,
-            lyrics=prompt,
-            prompt=prompt,
-            duration=duration,
-            job_timeout='5m',  # 5 minute timeout
-            result_ttl=3600,   # Keep results for 1 hour
-            failure_ttl=3600   # Keep failed jobs for 1 hour
-        )
-        
-        # Initialize job status in Redis
-        redis_conn.hset(f"job:{job_id}", mapping={
+        # For now, return a mock response
+        # In production, this would queue a job for background processing
+        return jsonify({
+            "job_id": job_id,
             "status": "queued",
-            "created_at": str(datetime.utcnow())
+            "message": "Music generation started"
         })
         
-        return jsonify({
-            "status": "queued",
-            "job_id": job_id,
-            "message": "Music generation started. Poll /api/music-status/{job_id} for status."
-        }), 202
-        
     except Exception as e:
-        error_msg = f"Error queuing music generation: {str(e)}"
-        app.logger.error(error_msg, exc_info=True)
+        error_msg = f"Error generating music: {str(e)}"
+        print(error_msg)
         return jsonify({"error": error_msg}), 500
 
 @app.route('/api/music-status/<job_id>', methods=['GET'])
 @cross_origin()
 def check_music_status(job_id):
-    """
-    Check the status of a music generation job.
-    
-    Returns:
-    - JSON with job status and result/error if available
-    """
-    job_data = redis_conn.hgetall(f"job:{job_id}")
-    
-    if not job_data:
-        return jsonify({"error": "Job not found"}), 404
-    
-    # Convert byte strings to regular strings
-    status_data = {k.decode('utf-8'): v.decode('utf-8') for k, v in job_data.items()}
-    
-    if status_data.get("status") == "finished":
-        file_path = status_data.get("filePath")
-        if file_path and os.path.exists(file_path):
-            return jsonify({
-                "status": "completed",
-                "file_url": f"/api/music-download/{job_id}",
-                "created_at": status_data.get("created_at")
-            })
-        else:
-            return jsonify({
-                "status": "error",
-                "message": "Generated file not found",
-                "created_at": status_data.get("created_at")
-            }), 500
-    elif status_data.get("status") == "failed":
+    """Check the status of a music generation job"""
+    try:
+        # Mock status check - in production this would check Redis/database
         return jsonify({
-            "status": "error",
-            "message": status_data.get("error", "Music generation failed"),
-            "created_at": status_data.get("created_at")
-        }), 500
-    else:
-        return jsonify({
-            "status": status_data.get("status", "pending"),
-            "created_at": status_data.get("created_at")
+            "job_id": job_id,
+            "status": "completed",
+            "download_url": f"/api/music-download/{job_id}"
         })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/music-download/<job_id>', methods=['GET'])
 @cross_origin()
 def download_music(job_id):
-    """
-    Download the generated music file.
-    """
-    job_data = redis_conn.hgetall(f"job:{job_id}")
+    """Download generated music file"""
+    try:
+        # Mock download - in production this would serve actual files
+        return jsonify({
+            "job_id": job_id,
+            "message": "Download endpoint ready",
+            "file_url": f"/static/music/{job_id}.wav"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def _handle_gemini_generate():
+    """Handle Gemini text generation request"""
+    data = request.get_json()
+    if not data or 'prompt' not in data:
+        return jsonify({
+            'success': False,
+            'error': 'Prompt is required'
+        }), 400
     
-    if not job_data:
-        return jsonify({"error": "Job not found"}), 404
+    # Extract and validate parameters
+    try:
+        temperature = min(1.0, max(0.0, float(data.get('temperature', 0.7))))
+        max_tokens = min(8192, max(1, int(data.get('max_tokens', 2048))))
+        top_p = min(1.0, max(0.0, float(data.get('top_p', 0.9))))
+        top_k = min(100, max(1, int(data.get('top_k', 40))))
+    except (ValueError, TypeError) as e:
+        return jsonify({
+            'success': False,
+            'error': f'Invalid parameters: {str(e)}'
+        }), 400
     
-    status_data = {k.decode('utf-8'): v.decode('utf-8') for k, v in job_data.items()}
-    
-    if status_data.get("status") != "finished":
-        return jsonify({"error": "Music generation not complete"}), 404
-    
-    file_path = status_data.get("filePath")
-    if not file_path or not os.path.exists(file_path):
-        return jsonify({"error": "Generated file not found"}), 404
-    
-    # Return the audio file
-    return send_file(
-        file_path,
-        mimetype='audio/wav',
-        as_attachment=True,
-        download_name=f"codedswitch_music_{job_id}.wav"
+    # Generate text
+    result = gemini_service.generate_text(
+        prompt=data['prompt'],
+        temperature=temperature,
+        max_output_tokens=max_tokens,
+        top_p=top_p,
+        top_k=top_k
     )
+    
+    if not result.get('success'):
+        return jsonify({
+            'success': False,
+            'error': result.get('error', 'Failed to generate text')
+        }), 500
+    
+    return jsonify({
+        'success': True,
+        'text': result.get('text', '').strip(),
+        'usage': result.get('usage', {})
+    })
+
+@app.route('/api/gemini/generate', methods=['POST', 'OPTIONS'])
+@cross_origin()
+@require_api_key('gemini_text')
+def gemini_generate():
+    """
+    Generate text using the Gemini API.
+    
+    Request JSON:
+    - prompt: The prompt to generate text from (required)
+    - temperature: Controls randomness (0.0 to 1.0, default: 0.7)
+    - max_tokens: Maximum length of the response (default: 2048)
+    - top_p: Nucleus sampling (0.0 to 1.0, default: 0.9)
+    - top_k: Top-k sampling (default: 40)
+    
+    Returns:
+    - JSON with generated text and metadata
+    """
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    
+    try:
+        return _handle_gemini_generate()
+    except Exception as e:
+        logging.error(f"Error in gemini_generate: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'An error occurred while processing your request',
+            'details': str(e) if app.config.get('DEBUG') else None
+        }), 500
+
+def _handle_gemini_generate_code():
+    """Handle Gemini code generation request"""
+    data = request.get_json()
+    if not data or 'prompt' not in data:
+        return jsonify({
+            'success': False,
+            'error': 'Prompt is required'
+        }), 400
+    
+    # Extract and validate parameters
+    try:
+        language = data.get('language', 'python').lower()
+        temperature = min(1.0, max(0.0, float(data.get('temperature', 0.5))))
+        max_tokens = min(8192, max(1, int(data.get('max_tokens', 2048))))
+    except (ValueError, TypeError) as e:
+        return jsonify({
+            'success': False,
+            'error': f'Invalid parameters: {str(e)}'
+        }), 400
+    
+    # Generate code
+    result = gemini_service.generate_text(
+        prompt=f"Generate {language} code for: {data['prompt']}\n\n"
+              f"Requirements:\n"
+              f"1. Use {language} programming language\n"
+              f"2. Include proper error handling\n"
+              f"3. Add relevant comments\n"
+              f"4. Follow best practices for {language}\n"
+              f"5. Only return the code, no explanations",
+        temperature=temperature,
+        max_output_tokens=max_tokens,
+        top_p=0.9,
+        top_k=40
+    )
+    
+    if not result.get('success'):
+        return jsonify({
+            'success': False,
+            'error': result.get('error', 'Failed to generate code')
+        }), 500
+    
+    return jsonify({
+        'success': True,
+        'code': result.get('text', '').strip(),
+        'language': language,
+        'usage': result.get('usage', {})
+    })
+
+@app.route('/api/gemini/generate-code', methods=['POST', 'OPTIONS'])
+@cross_origin()
+@require_api_key('gemini_code')
+def gemini_generate_code():
+    """
+    Generate code using the Gemini API.
+    
+    Request JSON:
+    - prompt: Description of the code to generate (required)
+    - language: Programming language (default: 'python')
+    - temperature: Controls randomness (0.0 to 1.0, default: 0.5)
+    - max_tokens: Maximum length of the response (default: 2048)
+    
+    Returns:
+    - JSON with generated code and metadata
+    """
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    
+    try:
+        return _handle_gemini_generate_code()
+    except Exception as e:
+        logging.error(f"Error in gemini_generate_code: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'An error occurred while generating code',
+            'details': str(e) if app.config.get('DEBUG') else None
+        }), 500
 
 # Add other endpoints here...
 
@@ -260,4 +339,4 @@ if __name__ == '__main__':
         db.create_all()
     
     # Start the Flask development server
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True) 

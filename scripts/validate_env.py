@@ -15,6 +15,7 @@ def validate_environment():
         'DATABASE_URL': 'Database connection URL',
         'REDIS_URL': 'Redis connection URL',
         'VITE_BACKEND_URL': 'Frontend backend URL',
+        'GEMINI_API_KEY': 'Google Gemini API key for AI features',
     }
     
     # Production-specific required variables

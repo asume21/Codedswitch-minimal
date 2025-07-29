@@ -25,7 +25,7 @@ const VulnerabilityScanner = React.lazy(() => import('./components/Vulnerability
 const AdminPanel = React.lazy(() => import('./components/AdminPanel'))
 const SpessaSynthEmbed = React.lazy(() => import('./components/SpessaSynthEmbed'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
-// const GeminiAITools = React.lazy(() => import('./components/GeminiAITools'));  // Temporarily disabled for build
+const GeminiAITools = React.lazy(() => import('./components/GeminiAITools'));
 
 function AppContent() {
   const [pricingPlans, setPricingPlans] = useState([]);
@@ -195,14 +195,12 @@ function AppContent() {
             >
               Code Translator
             </button>
-            {/* Temporarily disabled for build
             <button
               className={`nav-link ${isActive('/gemini-ai') ? 'active' : ''}`}
               onClick={() => navigate('/gemini-ai')}
             >
               Gemini AI
             </button>
-            */}
             <button
               className={`nav-link ${isActive('/lyric-lab') ? 'active' : ''}`}
               onClick={() => navigate('/lyric-lab')}
@@ -297,6 +295,11 @@ function AppContent() {
           {/* Product/feature routes */}
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/code-translator" element={<div className="code-translator-section"><CodeTranslator userSubscription={{ plan: userPlan }} /></div>} />
+          <Route path="/gemini-ai" element={
+            <Suspense fallback={<div>Loading Gemini AI Tools...</div>}>
+              <GeminiAITools />
+            </Suspense>
+          } />
           <Route path="/lyric-lab" element={<div className="lyric-lab-section"><LyricLab userPlan={userPlan} onUsageUpdate={(usage) => {console.log('Lyric usage updated:', usage);}} /></div>} />
           <Route path="/beat-studio" element={<BeatStudio />} />
           <Route path="/music-studio" element={

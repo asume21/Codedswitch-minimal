@@ -1,24 +1,6 @@
 {
-  "keys": {
-    "cs_god_QAGecKrkKdLgrO9l9ifL_0wWsR0jZaOMCfGR_VJymIk": {
-      "plan": "god",
-      "user_id": "creator",
-      "description": "God mode key - unlimited everything",
-      "created_at": "2025-07-28T11:05:58.123934",
-      "active": true,
-      "last_used": null
-    }
-  },
-  "usage": {
-    "cs_god_QAGecKrkKdLgrO9l9ifL_0wWsR0jZaOMCfGR_VJymIk": {
-      "lyric_generations": 0,
-      "music_generations": 0,
-      "code_translations": 0,
-      "vulnerability_scans": 0,
-      "codebeat_generations": 0,
-      "last_reset": "2025-07-28T11:05:58.123934"
-    }
-  },
+  "keys": {},
+  "usage": {},
   "plans": {
     "free": {
       "lyric_generations": 5,
@@ -26,8 +8,6 @@
       "code_translations": 10,
       "vulnerability_scans": 3,
       "codebeat_generations": 2,
-      "gemini_text": 5,
-      "gemini_code": 5,
       "reset_period_days": 30
     },
     "pro": {
@@ -36,8 +16,6 @@
       "code_translations": 500,
       "vulnerability_scans": 50,
       "codebeat_generations": 25,
-      "gemini_text": 100,
-      "gemini_code": 100,
       "reset_period_days": 30
     },
     "premium": {
@@ -46,8 +24,6 @@
       "code_translations": -1,
       "vulnerability_scans": -1,
       "codebeat_generations": -1,
-      "gemini_text": -1,
-      "gemini_code": -1,
       "reset_period_days": 30
     },
     "god": {
@@ -56,8 +32,6 @@
       "code_translations": -1,
       "vulnerability_scans": -1,
       "codebeat_generations": -1,
-      "gemini_text": -1,
-      "gemini_code": -1,
       "reset_period_days": -1,
       "admin_access": true,
       "bypass_all_limits": true
