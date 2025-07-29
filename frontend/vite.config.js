@@ -2,6 +2,25 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'url';
 
+// Force install the correct esbuild binary for the current platform
+import { platform, arch } from 'os';
+import { execSync } from 'child_process';
+
+const isRender = process.env.RENDER === 'true';
+
+// Install the correct esbuild binary for the current platform
+if (isRender) {
+  try {
+    const platformName = platform() === 'win32' ? 'windows' : platform() === 'darwin' ? 'darwin' : 'linux';
+    const archName = arch() === 'x64' ? '64' : '32';
+    const pkg = `@esbuild/${platformName}-${archName}`;
+    console.log(`Installing ${pkg}...`);
+    execSync(`npm install --no-save ${pkg}`, { stdio: 'inherit' });
+  } catch (error) {
+    console.error('Failed to install esbuild binary:', error);
+  }
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -30,7 +49,9 @@ export default defineConfig({
         '.js': 'jsx'
       },
       // Target modern browsers
-      target: 'es2020'
+      target: 'es2020',
+      // Force the correct platform for esbuild
+      platform: 'node',
     }
   },
   

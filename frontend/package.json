@@ -6,7 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build --base=/ && node -e \"const fs=require('fs'); fs.copyFileSync('public/_redirects', 'dist/_redirects'); fs.copyFileSync('static.json', 'dist/static.json');\"",
-    "preview": "vite preview --host",
+    "build:render": "node render-build.js",
+    "preview": "vite preview",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write \"**/*.{js,jsx,json,md}\"",
+    "prepare": "husky install",
+    "analyze": "cross-env ANALYZE=true vite build",
     "deploy": "npm run build"
   },
   "dependencies": {
@@ -35,6 +43,7 @@
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react": "^4.0.4",
+    "esbuild": "^0.18.20",
     "terser": "^5.43.1",
     "vite": "^4.4.9"
   }

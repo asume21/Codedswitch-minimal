@@ -2,11 +2,17 @@ services:
   - type: web
     name: codedswitch
     env: static
-    buildCommand: cd frontend && npm install && npm run build
+    buildCommand: |
+      cd frontend && \
+      npm install && \
+      npm install --save-dev @esbuild/linux-x64 && \
+      npm run build:render
     staticPublishPath: "./frontend/dist"
     envVars:
       - key: NODE_VERSION
         value: 18.x
+      - key: RENDER
+        value: "true"
     routes:
       - type: rewrite
         source: "/*"
