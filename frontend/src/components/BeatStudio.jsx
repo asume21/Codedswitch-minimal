@@ -2,8 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import './BeatStudio.css';
 import * as Tone from 'tone';
 import { FaPlay, FaPause, FaStop, FaVolumeUp, FaVolumeMute, FaHeadphones, FaRobot, FaMusic, FaSync, FaFileImport } from 'react-icons/fa';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+
 
 // Track configuration with initial patterns (16 steps)
 const INITIAL_TRACKS = [
