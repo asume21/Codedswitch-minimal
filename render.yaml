@@ -4,15 +4,18 @@ services:
     env: static
     buildCommand: |
       cd frontend && \
-      npm install && \
-      npm install --save-dev @esbuild/linux-x64 && \
-      npm run build:render
+      npm ci --no-audit --prefer-offline && \
+      npm run build
     staticPublishPath: "./frontend/dist"
     envVars:
       - key: NODE_VERSION
         value: 18.x
-      - key: RENDER
-        value: "true"
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
+      - key: VITE_API_URL
+        value: https://codedswitch-api.onrender.com
+      - key: VITE_ENABLE_ANALYTICS
+        value: "false"
     routes:
       - type: rewrite
         source: "/*"
@@ -21,11 +24,19 @@ services:
   - type: web
     name: codedswitch-api
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn backend.web_backend:app
+    buildCommand: |
+      python -m pip install --upgrade pip && \
+      pip install -r requirements.txt
+    startCommand: gunicorn --worker-class=uvicorn.workers.UvicornWorker backend.web_backend:app
     envVars:
       - key: PYTHON_VERSION
         value: "3.10"
       - key: PORT
         value: 10000
+      - key: PYTHONUNBUFFERED
+        value: "true"
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+    healthCheckPath: /health
+    autoDeploy: true
     healthCheckPath: /api/health

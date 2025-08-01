@@ -101,7 +101,7 @@ const SettingsDropdown = () => {
         </div>
       )}
       
-      <style jsx>{`
+      <style jsx="true">{`
         .settings-dropdown {
           position: relative;
           display: inline-block;

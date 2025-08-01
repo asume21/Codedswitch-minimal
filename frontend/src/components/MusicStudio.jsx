@@ -123,16 +123,19 @@ const PIANO_KEYS = [
 
 // Drum pads (expanded to 9 pads)
 const DRUM_PADS = [
-  { name: 'Kick', color: '#ff6b6b', key: 'Q', type: 'kick' },
-  { name: 'Snare', color: '#4ecdc4', key: 'W', type: 'snare' },
-  { name: 'Hi-Hat', color: '#45b7d1', key: 'E', type: 'hihat' },
-  { name: 'Crash', color: '#f9ca24', key: 'R', type: 'crash' },
-  { name: 'Tom 1', color: '#6c5ce7', key: 'T', type: 'tom' },
-  { name: 'Tom 2', color: '#a29bfe', key: 'Y', type: 'tom' },
-  { name: 'Clap', color: '#fd79a8', key: 'A', type: 'clap' },
-  { name: 'Rim', color: '#00b894', key: 'S', type: 'rim' },
-  { name: 'Perc', color: '#e17055', key: 'D', type: 'perc' }
-]
+  { name: 'Kick', key: 'Q', color: '#FF6B6B' },
+  { name: 'Snare', key: 'W', color: '#4ECDC4' },
+  { name: 'Hi-Hat', key: 'E', color: '#45B7D1' },
+  { name: 'Crash', key: 'R', color: '#96CEB4' },
+  { name: 'Tom 1', key: 'T', color: '#FFEEAD' },
+  { name: 'Tom 2', key: 'Y', color: '#D4A5A5' },
+  { name: 'Clap', key: 'U', color: '#9B6A6C' },
+  { name: 'Rim', key: 'I', color: '#E9C46A' },
+  { name: 'Perc', key: 'O', color: '#F4A261' }
+].map((pad, index) => ({
+  ...pad,
+  key: ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O'][index] || String.fromCharCode(65 + index)
+}));
 
 // Instrument categories
 const INSTRUMENT_CATEGORIES = [
@@ -401,37 +404,6 @@ function MusicStudioContent() {
         }).toDestination()
       };
       
-      // Store all instruments
-      setInstruments({
-        piano,
-        drums,
-        strings: stringInstruments,
-        brass: {},
-        woodwinds: {},
-        synths: {},
-        fx: {}
-      });
-      
-      audioInitializedRef.current = true;
-      setAudioReady(true);
-      setShowInitialization(false);
-      setShowInitialization(false);
-      console.log('Audio initialization complete');
-      
-      // Set master volume
-      Tone.Destination.volume.value = Tone.gainToDb(volume);
-      
-      // Create piano synth
-      const pianoSynth = new Tone.PolySynth(Tone.Synth).toDestination();
-      pianoSynth.set({
-        envelope: {
-          attack: 0.02,
-          decay: 0.1,
-          sustain: 0.3,
-          release: 1
-        }
-      });
-      
       // Create drums using local synthesizers
       const drumKit = {};
       
@@ -497,7 +469,75 @@ function MusicStudioContent() {
         resonance: 3000
       }).toDestination();
       
-      // Percussion
+      // Store all instruments with proper initialization
+      setInstruments({
+        piano: new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'triangle' },
+          envelope: {
+            attack: 0.01,
+            decay: 0.1,
+            sustain: 0.3,
+            release: 0.5
+          }
+        }).toDestination(),
+        drums: drumKit,
+        strings: {
+          'Violin': new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.1, decay: 0.3, sustain: 0.4, release: 0.5 }
+          }).toDestination(),
+          'Cello': new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.1, decay: 0.4, sustain: 0.5, release: 0.8 }
+          }).toDestination(),
+          'Harp': new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.01, decay: 0.5, sustain: 0.3, release: 1 }
+          }).toDestination()
+        },
+        brass: {
+          'Trumpet': new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sawtooth' },
+            envelope: { attack: 0.05, decay: 0.3, sustain: 0.4, release: 0.2 }
+          }).toDestination(),
+          'Trombone': new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sawtooth' },
+            envelope: { attack: 0.1, decay: 0.4, sustain: 0.5, release: 0.3 }
+          }).toDestination()
+        },
+        woodwinds: {
+          'Flute': new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sine' },
+            envelope: { attack: 0.1, decay: 0.3, sustain: 0.6, release: 0.5 }
+          }).toDestination(),
+          'Clarinet': new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sawtooth' },
+            envelope: { attack: 0.05, decay: 0.2, sustain: 0.4, release: 0.3 }
+          }).toDestination()
+        },
+        synths: {
+          'Pad': new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sine' },
+            envelope: { attack: 1, decay: 0.5, sustain: 0.5, release: 2 }
+          }).toDestination(),
+          'Lead': new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: 'sawtooth' },
+            envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.2 }
+          }).toDestination()
+        },
+        fx: {}
+      });
+      
+      audioInitializedRef.current = true;
+      setAudioReady(true);
+      setShowInitialization(false);
+      console.log('Audio initialization complete');
+      
+      // Set master volume
+      Tone.Destination.volume.value = Tone.gainToDb(volume);
+      
+      // Set default selected instrument
+      setSelectedInstrument(WOODWIND_INSTRUMENTS[0]);
       drumKit['Perc'] = new Tone.NoiseSynth({
         noise: { type: 'brown' },
         envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.4 }
@@ -668,13 +708,25 @@ function MusicStudioContent() {
         case 'drums':
           if (instruments.drums && instruments.drums[note]) {
             const drum = instruments.drums[note];
+            const now = Tone.now();
+            
             if (note === 'Kick') {
-              drum.triggerAttackRelease('C1', '8n');
-            } else if (note === 'Snare' || note === 'Clap') {
-              drum.triggerAttack();
-              setTimeout(() => drum.triggerRelease(), 100);
+              drum.triggerAttackRelease('C1', '8n', now);
+            } else if (note === 'Snare' || note === 'Clap' || note === 'Rim') {
+              drum.triggerAttack(now);
+              drum.triggerRelease(now + 0.1);
+            } else if (note === 'Hi-Hat' || note === 'Crash' || note === 'Perc') {
+              drum.triggerAttackRelease('C6', '8n', now);
             } else {
-              drum.triggerAttackRelease('C6', '8n');
+              // Handle toms and other drums
+              drum.triggerAttackRelease('A2', '8n', now);
+            }
+            
+            // Visual feedback
+            const padElement = document.querySelector(`.drum-pad[title*="${note}"]`);
+            if (padElement) {
+              padElement.classList.add('active-pad');
+              setTimeout(() => padElement.classList.remove('active-pad'), 100);
             }
           }
           break;
@@ -685,48 +737,6 @@ function MusicStudioContent() {
             const synth = instruments.brass[selectedInstrument.name];
             if (synth) {
               synth.triggerAttack(note);
-              return () => synth.triggerRelease(note);
-            }
-          }
-          break;
-          
-        case 'strings':
-          if (instruments.strings && selectedInstrument) {
-            const synth = instruments.strings[selectedInstrument.name];
-            if (synth) {
-              synth.triggerAttack(noteStr);
-              return () => synth.triggerRelease(noteStr);
-            }
-          }
-          break;
-          
-        case 'woodwinds':
-          if (instruments.woodwinds && selectedInstrument) {
-            const synth = instruments.woodwinds[selectedInstrument.name];
-            if (synth) {
-              synth.triggerAttack(noteStr);
-              return () => synth.triggerRelease(noteStr);
-            }
-          }
-          break;
-          
-        case 'synths':
-          if (instruments.synths && selectedInstrument) {
-            const synth = instruments.synths[selectedInstrument.name];
-            if (synth) {
-              synth.triggerAttack(noteStr);
-              return () => synth.triggerRelease(noteStr);
-            }
-          }
-          break;
-          
-        case 'fx':
-          // For sound effects, just play the note directly
-          if (instruments.fx && selectedInstrument) {
-            const fx = instruments.fx[selectedInstrument.name];
-            if (fx) {
-              fx.triggerAttack(note);
-              return () => fx.triggerRelease();
             }
           }
           break;
@@ -772,20 +782,29 @@ function MusicStudioContent() {
     }
   };
 
-  // Handle drum pad hits
+  // Handle drum pad hits with proper audio scheduling
   const playDrum = (drumName) => {
-    if (!instruments?.drums?.[drumName]) return;
+    if (!instruments?.drums?.[drumName]) {
+      console.warn(`Drum ${drumName} not found in instruments`);
+      return;
+    }
     
     try {
+      const now = Tone.context.currentTime;
       const drum = instruments.drums[drumName];
-      if (drumName === 'Kick') {
-        drum.triggerAttackRelease('C1', '8n');
+      
+      // Schedule the drum sound with proper timing
+      if (drumName === 'Kick' || drumName === 'Tom 1' || drumName === 'Tom 2') {
+        // For pitched drums (kick and toms)
+        drum.triggerAttackRelease('C1', '8n', now);
       } else if (drumName === 'Snare' || drumName === 'Clap' || drumName === 'Perc') {
-        drum.triggerAttack();
+        // For noise-based drums
+        drum.triggerAttack(now);
+        drum.triggerRelease(now + 0.2);
       } else if (drumName === 'Hi-Hat' || drumName === 'Crash' || drumName === 'Rim') {
-        drum.triggerAttackRelease('C6', '8n');
-      } else if (drumName.includes('Tom')) {
-        drum.triggerAttackRelease('C2', '8n');
+        // For cymbals and metallic sounds
+        drum.triggerAttack(now);
+        drum.triggerRelease(now + 0.5);
       }
     } catch (error) {
       console.error('Error playing drum:', error);
@@ -1162,40 +1181,99 @@ function MusicStudioContent() {
     );
   }
 
-  const renderDrumsTab = () => (
-    <div className="instrument-panel">
-      <div className="instrument-header">
-        <FaDrum size={32} />
-        <h3>Drums</h3>
-        <button 
-          className="ai-play-btn"
-          onClick={() => {
-            setAiPrompt('Create a sick drum beat')
-            generateWithAI()
-          }}
-        >
-          🤖 AI Beat
-        </button>
-      </div>
-      <div className="drum-pads">
-        {DRUM_PADS.map((pad, index) => (
-          <button
-            key={index}
-            className="drum-pad"
-            style={{ backgroundColor: pad.color }}
-            onClick={() => playSound('drum', pad.name)}
-            title={`${pad.name} - Press ${pad.key} or click`}
-            onMouseDown={(e) => e.currentTarget.classList.add('active-pad')}
-            onMouseUp={(e) => setTimeout(() => e.currentTarget.classList.remove('active-pad'), 100)}
-            onMouseLeave={(e) => e.currentTarget.classList.remove('active-pad')}
+  // Utility function to adjust color brightness
+  const adjustColor = (color, amount) => {
+    // If the color is a hex value
+    if (color[0] === '#') {
+      color = color.slice(1);
+      const num = parseInt(color, 16);
+      let r = (num >> 16) + amount;
+      let g = (num >> 8 & 0x00FF) + amount;
+      let b = (num & 0x0000FF) + amount;
+      
+      // Clamp values between 0-255
+      r = Math.max(0, Math.min(255, r));
+      g = Math.max(0, Math.min(255, g));
+      b = Math.max(0, Math.min(255, b));
+      
+      return '#' + (g | (b << 8) | (r << 16)).toString(16).padStart(6, '0');
+    }
+    return color; // Return as is if not a hex color
+  };
+
+  // Handle keyboard events for drums
+  useEffect(() => {
+    if (!instruments || activeTab !== 'drums') return;
+    
+    const handleKeyDown = (e) => {
+      if (e.repeat) return; // Prevent key repeat
+      
+      const key = e.key.toUpperCase();
+      const drumPad = DRUM_PADS.find(pad => pad.key === key);
+      
+      if (drumPad) {
+        e.preventDefault();
+        playDrum(drumPad.name);
+        
+        // Visual feedback
+        const padElement = document.querySelector(`.drum-pad[title*="${drumPad.name}"]`);
+        if (padElement) {
+          padElement.classList.add('active-pad');
+          setTimeout(() => padElement.classList.remove('active-pad'), 100);
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [instruments, activeTab]);
+
+  const renderDrumsTab = () => {
+    return (
+      <div className="instrument-panel">
+        <div className="instrument-header">
+          <FaDrum size={32} />
+          <h3>Drums</h3>
+          <button 
+            className="ai-play-btn"
+            onClick={() => {
+              setAiPrompt('Create a sick drum beat');
+              generateWithAI();
+            }}
           >
-            <div className="pad-name">{pad.name}</div>
-            <div className="pad-key">{pad.key}</div>
+            🤖 AI Beat
           </button>
-        ))}
+        </div>
+        <div className="drum-pads">
+          {DRUM_PADS.map((pad, index) => (
+            <button
+              key={index}
+              className="drum-pad"
+              style={{ 
+                backgroundColor: pad.color,
+                boxShadow: `0 4px 0 ${adjustColor(pad.color, -20)}, 0 0 10px ${pad.color}40`
+              }}
+              title={`${pad.name} - Press ${pad.key} or click`}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.add('active-pad');
+                playDrum(pad.name);
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.classList.remove('active-pad');
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.classList.remove('active-pad');
+              }}
+            >
+              <div className="pad-name">{pad.name}</div>
+              <div className="pad-key">{pad.key}</div>
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
-  )
+    );
+  }
 
   const renderHornsTab = () => (
     <div className="instrument-panel">

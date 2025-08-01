@@ -1,39 +1,66 @@
-# Use a Python base image with the same version as your backend
+# Stage 1: Build stage for compiling dependencies
+FROM python:3.9-slim as builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    pkg-config \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create and activate virtual environment
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install build dependencies
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install audiocraft from source with specific commit for stability
+RUN pip install --no-cache-dir 'torch>=2.1.0' 'torchaudio>=2.1.0' --extra-index-url https://download.pytorch.org/whl/cpu
+RUN pip install --no-cache-dir 'git+https://github.com/facebookresearch/audiocraft.git@v1.0.0' 
+
+# Stage 2: Final image
 FROM python:3.9-slim
 
-# Install system dependencies for audiocraft and ffmpeg
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
-    libavcodec-dev \
-    libavformat-dev \
-    libavdevice-dev \
-    libavutil-dev \
-    libavfilter-dev \
-    libswscale-dev \
-    libswresample-dev \
-    pkg-config \
-    build-essential \
+    libavcodec58 \
+    libavformat58 \
+    libavdevice58 \
+    libavutil56 \
+    libavfilter7 \
+    libswscale5 \
+    libswresample3 \
     && rm -rf /var/lib/apt/lists/*
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Set working directory
 WORKDIR /app
 
-# Copy requirements first to leverage Docker cache
-COPY backend/requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Install audiocraft from source
-RUN pip install 'git+https://github.com/facebookresearch/audiocraft.git' --no-cache-dir
-
-# Copy worker files
+# Copy application code
 COPY backend/worker.py .
 COPY backend/musicgen_backend.py .
 
 # Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PYTORCH_ENABLE_MPS_FALLBACK=1 \
+    PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:128 \
+    OMP_NUM_THREADS=1
+
+# Create a non-root user and switch to it
+RUN groupadd -r worker && useradd -r -g worker worker \
+    && chown -R worker:worker /app
+USER worker
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import os, sys; sys.exit(0 if os.path.exists('/tmp/worker.health') else 1)"
 
 # Run the worker
 CMD ["python", "worker.py"]

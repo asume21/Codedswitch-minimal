@@ -1,0 +1,36 @@
+services:
+  - type: worker
+    name: music-generation-worker
+    env: docker
+    build:
+      dockerfile: backend/Dockerfile.worker
+      context: .
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PYTHONPATH
+        value: "/app"
+      - key: PYTORCH_ENABLE_MPS_FALLBACK
+        value: "1"
+      - key: PYTORCH_CUDA_ALLOC_CONF
+        value: "max_split_size_mb:128"
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          property: connectionString
+    instanceCount: 1
+    plan: free
+    healthCheckPath: /health
+    healthCheckTimeout: 10
+    envVarReferences:
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          property: connectionString
+          type: redis
+
+  - type: redis
+    name: redis
+    plan: free

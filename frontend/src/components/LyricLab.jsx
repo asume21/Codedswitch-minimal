@@ -27,10 +27,28 @@ const LyricLab = ({ userPlan = 'free', onUsageUpdate }) => {
 
   const fetchUserSubscription = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000'}/api/user/subscription?userId=anonymous`);
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/user/subscription?userId=anonymous`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': localStorage.getItem('apiKey') || ''
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
-      setUserSubscription(data.subscription);
-      setUserUsage(data.usage);
+      setUserSubscription(data.subscription || {
+        plan: 'free',
+        name: 'Free',
+        monthlyLyrics: 5,
+        features: ['5 Lyric Generations per Month', 'Basic Code Translation', 'Community Support']
+      });
+      setUserUsage(data.usage || {
+        lyricsGenerated: 0,
+        lastReset: new Date().toISOString().slice(0, 7)
+      });
     } catch (error) {
       console.error('Error fetching subscription:', error);
       // Fallback to free plan

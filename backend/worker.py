@@ -1,7 +1,12 @@
 import os
 import time
+import signal
+import sys
 import traceback
 import logging
+import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from threading import Thread
 import redis
 from rq import Queue, Connection, Worker
 from musicgen_backend import generate_instrumental
@@ -75,17 +80,84 @@ def generate_task(job_id, lyrics, prompt, duration):
         )
         raise  # Re-raise to mark the job as failed in RQ
 
+# Health check server
+class HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/health':
+            try:
+                # Check Redis connection
+                redis_conn.ping()
+                
+                # Check worker status
+                with Connection(redis_conn):
+                    worker = Worker.count(connection=redis_conn)
+                
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'status': 'healthy',
+                    'timestamp': time.time(),
+                    'worker_count': worker,
+                    'queue_size': task_queue.count
+                }).encode('utf-8'))
+                
+                # Touch health file for Docker HEALTHCHECK
+                with open('/tmp/worker.health', 'w') as f:
+                    f.write(str(time.time()))
+                    
+            except Exception as e:
+                logger.error(f"Health check failed: {str(e)}")
+                self.send_error(500, str(e))
+        else:
+            self.send_error(404, 'Not Found')
+
+def run_health_server():
+    server = HTTPServer(('0.0.0.0', 8080), HealthHandler)
+    logger.info("Starting health check server on port 8080")
+    server.serve_forever()
+
+def signal_handler(signum, frame):
+    logger.info(f"Received signal {signum}, shutting down gracefully...")
+    # Clean up resources here if needed
+    sys.exit(0)
+
 if __name__ == '__main__':
-    # Worker entrypoint with error handling
+    # Set up signal handlers
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    # Start health check server in a separate thread
+    health_thread = Thread(target=run_health_server, daemon=True)
+    health_thread.start()
+    
+    # Worker entrypoint with error handling and reconnection logic
     logger.info("Starting RQ worker for music generation tasks")
     
-    with Connection(redis_conn):
-        worker = Worker(
-            [task_queue.name],
-            connection=redis_conn,
-            default_worker_ttl=600,  # 10 minutes
-            job_monitoring_interval=5.0
-        )
-        
-        # Configure worker to handle SIGTERM properly
-        worker.work(with_scheduler=True)
+    while True:
+        try:
+            with Connection(redis_conn):
+                worker = Worker(
+                    [task_queue.name],
+                    connection=redis_conn,
+                    default_worker_ttl=600,  # 10 minutes
+                    job_monitoring_interval=5.0,
+                    log_job_description=False  # Don't log full job data
+                )
+                
+                # Log worker startup
+                logger.info(f"Worker started: {worker}")
+                
+                # Start the worker
+                worker.work(with_scheduler=True, burst=False)  # burst=False to keep worker alive
+                
+        except redis.exceptions.ConnectionError as e:
+            logger.error(f"Redis connection error: {str(e)}. Retrying in 5 seconds...")
+            time.sleep(5)
+            continue
+            
+        except Exception as e:
+            logger.error(f"Unexpected error in worker: {str(e)}\n{traceback.format_exc()}")
+            logger.info("Restarting worker in 5 seconds...")
+            time.sleep(5)
+            continue

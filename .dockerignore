@@ -1,6 +1,8 @@
 # Git
 .git
 .gitignore
+.gitattributes
+.gitmodules
 
 # Python
 __pycache__/
@@ -8,6 +10,16 @@ __pycache__/
 *$py.class
 *.so
 .Python
+*.pyc
+*.pyo
+*.pyd
+.python-version
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
 env/
 venv/
 ENV/
@@ -16,30 +28,54 @@ ENV/
 
 # Node
 node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 
-# Build
+# Build and Distribution
 dist/
 build/
+*.egg-info/
+*.egg
 
-# IDE
+# IDE and Editor
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+.project
+.pydevproject
+.settings/
+.ropeproject/
 
-# Environment variables
+# Environment and Secrets
 .env*
 !.env.example
+secrets.ini
+credentials.json
+*.pem
+*.key
 
-# Logs
+# Logs and Debug
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Local development
+# Local Development
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # OS generated files
 .DS_Store
@@ -48,4 +84,122 @@ logs/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+
+# Media and Large Files
+*.mp3
+*.wav
+*.mp4
+*.mov
+*.avi
+*.flac
+*.ogg
+*.m4a
+*.m4v
+*.mpg
+*.mpeg
+*.dat
+*.mov
+*.wmv
+*.flv
+*.webm
+*.vob
+*.mkv
+
+# Archives
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.tar.gz
+*.zip
+*.tgz
+*.bzip2
+*.xz
+*.z
+*.lzma
+*.lz4
+*.lzh
+*.lha
+*.zst
+*.zstd
+
+# Database
+*.db
+*.sqlite3
+*.sql
+*.sqlite
+*.dump
+*.bak
+*.backup
+*.bkp
+*.old
+*.orig
+*.swp
+*.swo
+*~
+
+# Python packaging
+*.manifest
+*.spec
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Testing
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+.tox/
+
+# Documentation
+docs/_build/
+docs/api/
+
+# Local development settings
+.local-settings.json
+
+# Project specific
+media/
+uploads/
+temp/
+.cache/
+.vercel/
+.netlify/
+
+# Render specific
+.render/
+
+# Vercel specific
+.vercel/
+
+# Netlify specific
+.netlify/
+
+# Windows image file caches
+Thumbs.db
+
+# Windows Installer files
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# End of https://www.toptal.com/developers/gitignore/api/python,node,react,reactnative,react-native,visualstudiocode,visualstudio,webstorm
 Thumbs.db
