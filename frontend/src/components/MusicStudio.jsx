@@ -296,7 +296,7 @@ const SOUND_FX = [
 ]
 
 // Main component with error boundary
-export default function MusicStudio() {
+function MusicStudio() {
   return (
     <ErrorBoundary>
       <MusicStudioContent />
@@ -310,7 +310,7 @@ function MusicStudioContent() {
   const [aiResponse, setAiResponse] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [volume, setVolume] = useState(0.7)
+  const [volumeState, setVolumeState] = useState(0.7)
   const [bpm, setBpm] = useState(120)
   const [audioReady, setAudioReady] = useState(false)
   const [audioError, setAudioError] = useState(null)
@@ -348,346 +348,160 @@ function MusicStudioContent() {
       await Tone.start();
       console.log('Audio context ready');
       
-      // Test audio with proper timing
+      // Initialize all instruments
+      const initializedInstruments = initializeInstruments();
+      
+      // Set initial volume
+      initializedInstruments.setVolume(volumeState);
+      
+      console.log('Instruments initialized successfully');
+      setAudioReady(true);
+      audioInitializedRef.current = true;
+      setShowInitialization(false);
+      
+      // Play a test sound to ensure audio is working
       const testSynth = new Tone.Synth().toDestination();
       const now = Tone.now();
       testSynth.triggerAttackRelease("C4", "8n", now + 0.1);
       
-      // Set up master volume
-      Tone.Destination.volume.value = Tone.gainToDb(volume);
+      // Set the instruments in state
+      setInstruments(initializedInstruments);
       
-      // Create piano synth with better settings
-      const piano = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: 'triangle' },
-        envelope: {
-          attack: 0.01,
-          decay: 0.1,
-          sustain: 0.3,
-          release: 0.5
-        }
-      }).toDestination();
-      
-      // Create drum kit
-      const drums = {
-        'Kick': new Tone.MembraneSynth({
-          pitchDecay: 0.05,
-          octaves: 5,
-          oscillator: { type: 'sine' },
-          envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4 }
-        }).toDestination(),
-        'Snare': new Tone.NoiseSynth({
-          noise: { type: 'white' },
-          envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.5 }
-        }).toDestination(),
-        'Hi-Hat': new Tone.MetalSynth({
-          frequency: 200,
-          envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.3 },
-          harmonicity: 5.1,
-          modulationIndex: 32,
-          resonance: 4000
-        }).toDestination(),
-        'Crash': new Tone.MetalSynth({
-          frequency: 800,
-          envelope: { attack: 0.001, decay: 0.5, sustain: 0.01, release: 1.5 },
-          harmonicity: 3.1,
-          modulationIndex: 64,
-          resonance: 2000
-        }).toDestination()
-      };
-      
-      // Create string instruments
-      const stringInstruments = {
-        'Violin': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'fatsawtooth', count: 2, spread: 30 },
-          envelope: { attack: 0.1, decay: 0.3, sustain: 0.4, release: 0.5 },
-          volume: -8
-        }).toDestination()
-      };
-      
-      // Create drums using local synthesizers
-      const drumKit = {};
-      
-      // Kick drum
-      drumKit['Kick'] = new Tone.MembraneSynth({
-        pitchDecay: 0.05,
-        octaves: 5,
-        oscillator: { type: 'sine' },
-        envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4 }
-      }).toDestination();
-      
-      // Snare drum
-      drumKit['Snare'] = new Tone.NoiseSynth({
-        noise: { type: 'white' },
-        envelope: { attack: 0.001, decay: 0.2, sustain: 0.02, release: 0.8 }
-      }).toDestination();
-      
-      // Hi-hat
-      drumKit['Hi-Hat'] = new Tone.MetalSynth({
-        frequency: 200,
-        envelope: { attack: 0.001, decay: 0.1, sustain: 0.003, release: 0.3 },
-        harmonicity: 5.1,
-        modulationIndex: 32,
-        resonance: 4000
-      }).toDestination();
-      
-      // Crash
-      drumKit['Crash'] = new Tone.MetalSynth({
-        frequency: 800,
-        envelope: { attack: 0.001, decay: 0.5, sustain: 0.01, release: 1.5 },
-        harmonicity: 3.1,
-        modulationIndex: 64,
-        resonance: 2000
-      }).toDestination();
-      
-      // Toms
-      drumKit['Tom 1'] = new Tone.MembraneSynth({
-        pitchDecay: 0.05,
-        octaves: 3,
-        oscillator: { type: 'sine' },
-        envelope: { attack: 0.001, decay: 0.3, sustain: 0.01, release: 0.5 }
-      }).toDestination();
-      
-      drumKit['Tom 2'] = new Tone.MembraneSynth({
-        pitchDecay: 0.05,
-        octaves: 2,
-        oscillator: { type: 'sine' },
-        envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 0.6 }
-      }).toDestination();
-      
-      // Clap
-      drumKit['Clap'] = new Tone.NoiseSynth({
-        noise: { type: 'pink' },
-        envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.3 }
-      }).toDestination();
-      
-      // Rim
-      drumKit['Rim'] = new Tone.MetalSynth({
-        frequency: 400,
-        envelope: { attack: 0.001, decay: 0.1, sustain: 0.01, release: 0.2 },
-        harmonicity: 10,
-        modulationIndex: 40,
-        resonance: 3000
-      }).toDestination();
-      
-      // Store all instruments with proper initialization
-      setInstruments({
-        piano: new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'triangle' },
-          envelope: {
-            attack: 0.01,
-            decay: 0.1,
-            sustain: 0.3,
-            release: 0.5
-          }
-        }).toDestination(),
-        drums: drumKit,
-        strings: {
-          'Violin': new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: 'sine' },
-            envelope: { attack: 0.1, decay: 0.3, sustain: 0.4, release: 0.5 }
-          }).toDestination(),
-          'Cello': new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: 'sine' },
-            envelope: { attack: 0.1, decay: 0.4, sustain: 0.5, release: 0.8 }
-          }).toDestination(),
-          'Harp': new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: 'sine' },
-            envelope: { attack: 0.01, decay: 0.5, sustain: 0.3, release: 1 }
-          }).toDestination()
-        },
-        brass: {
-          'Trumpet': new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: 'sawtooth' },
-            envelope: { attack: 0.05, decay: 0.3, sustain: 0.4, release: 0.2 }
-          }).toDestination(),
-          'Trombone': new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: 'sawtooth' },
-            envelope: { attack: 0.1, decay: 0.4, sustain: 0.5, release: 0.3 }
-          }).toDestination()
-        },
-        woodwinds: {
-          'Flute': new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: 'sine' },
-            envelope: { attack: 0.1, decay: 0.3, sustain: 0.6, release: 0.5 }
-          }).toDestination(),
-          'Clarinet': new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: 'sawtooth' },
-            envelope: { attack: 0.05, decay: 0.2, sustain: 0.4, release: 0.3 }
-          }).toDestination()
-        },
-        synths: {
-          'Pad': new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: 'sine' },
-            envelope: { attack: 1, decay: 0.5, sustain: 0.5, release: 2 }
-          }).toDestination(),
-          'Lead': new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: 'sawtooth' },
-            envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.2 }
-          }).toDestination()
-        },
-        fx: {}
-      });
-      
-      audioInitializedRef.current = true;
-      setAudioReady(true);
-      setShowInitialization(false);
-      console.log('Audio initialization complete');
-      
-      // Set master volume
-      Tone.Destination.volume.value = Tone.gainToDb(volume);
-      
-      // Set default selected instrument
-      setSelectedInstrument(WOODWIND_INSTRUMENTS[0]);
-      drumKit['Perc'] = new Tone.NoiseSynth({
-        noise: { type: 'brown' },
-        envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.4 }
-      }).toDestination();
-      
-      // Create string instruments
-      const strings = {
-        'Violin': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sine' },
-          envelope: { attack: 0.1, decay: 0.3, sustain: 0.4, release: 0.5 }
-        }).toDestination(),
-        'Cello': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sine' },
-          envelope: { attack: 0.1, decay: 0.5, sustain: 0.3, release: 0.8 }
-        }).toDestination(),
-        'Viola': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sine' },
-          envelope: { attack: 0.1, decay: 0.4, sustain: 0.3, release: 0.6 }
-        }).toDestination(),
-        'Harp': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sine' },
-          envelope: { attack: 0.01, decay: 0.5, sustain: 0, release: 0.5 }
-        }).toDestination()
-      };
-      
-      // Create brass instruments
-      const brass = {
-        'Trumpet': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sawtooth' },
-          envelope: { attack: 0.1, decay: 0.2, sustain: 0.6, release: 0.8 }
-        }).toDestination(),
-        'Trombone': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sawtooth' },
-          envelope: { attack: 0.1, decay: 0.3, sustain: 0.5, release: 0.7 }
-        }).toDestination(),
-        'French Horn': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sawtooth' },
-          envelope: { attack: 0.2, decay: 0.4, sustain: 0.5, release: 0.8 }
-        }).toDestination()
-      };
-      
-      // Create woodwind instruments
-      const woodwinds = {
-        'Flute': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sine' },
-          envelope: { attack: 0.1, decay: 0.3, sustain: 0.4, release: 0.5 }
-        }).toDestination(),
-        'Clarinet': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sawtooth' },
-          envelope: { attack: 0.1, decay: 0.4, sustain: 0.5, release: 0.6 }
-        }).toDestination(),
-        'Saxophone': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sawtooth' },
-          envelope: { attack: 0.1, decay: 0.3, sustain: 0.5, release: 0.7 }
-        }).toDestination()
-      };
-      
-      // Create synths
-      const synths = {
-        'Lead': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sawtooth' },
-          envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.3 }
-        }).toDestination(),
-        'Bass': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sawtooth' },
-          envelope: { attack: 0.01, decay: 0.5, sustain: 0.3, release: 0.5 }
-        }).toDestination(),
-        'Pad': new Tone.PolySynth(Tone.Synth, {
-          oscillator: { type: 'sine' },
-          envelope: { attack: 1, decay: 0.5, sustain: 1, release: 2 }
-        }).toDestination()
-      };
-      
-      // Store all instruments in state
-      setInstruments({
-        piano: pianoSynth,
-        drums: drumKit,
-        strings,
-        brass,
-        woodwinds,
-        synths,
-        fx: {}
-      });
-      
-      setAudioReady(true);
+      return initializedInstruments;
     } catch (error) {
       console.error('Failed to start audio context:', error);
       setAudioError(error.message);
       audioInitializedRef.current = false;
+      throw error; // Re-throw to be caught by the outer try-catch
     }
   };
 
-  // Helper function to darken a color
-  const shadeColor = (color, percent) => {
-    let R = parseInt(color.substring(1,3), 16);
-    let G = parseInt(color.substring(3,5), 16);
-    let B = parseInt(color.substring(5,7), 16);
+  // Initialize instruments
+  const initializeInstruments = () => {
+    // Create drum kit
+    const drumKit = {
+      'Kick': new Tone.MembraneSynth({
+        pitchDecay: 0.05,
+        octaves: 5,
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.2 }
+      }).toDestination(),
+      'Snare': new Tone.NoiseSynth({
+        noise: { type: 'white' },
+        envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.2 }
+      }).toDestination(),
+      'Hi-Hat': new Tone.MetalSynth({
+        frequency: 200,
+        envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
+        harmonicity: 5.1,
+        modulationIndex: 32,
+        resonance: 4000,
+        octaves: 1.5
+      }).toDestination(),
+      'Clap': new Tone.NoiseSynth({
+        noise: { type: 'white' },
+        envelope: { attack: 0.01, decay: 0.3, sustain: 0.01, release: 0.03 }
+      }).toDestination(),
+      'Tom 1': new Tone.MembraneSynth({
+        pitchDecay: 0.05,
+        octaves: 5,
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.3 }
+      }).toDestination(),
+      'Tom 2': new Tone.MembraneSynth({
+        pitchDecay: 0.05,
+        octaves: 5,
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.3 }
+      }).toDestination(),
+      'Crash': new Tone.MetalSynth({
+        frequency: 300,
+        envelope: { attack: 0.001, decay: 1, release: 0.1 },
+        harmonicity: 5.1,
+        modulationIndex: 64,
+        resonance: 4000,
+        octaves: 1.5
+      }).toDestination(),
+      'Rim': new Tone.MetalSynth({
+        frequency: 500,
+        envelope: { attack: 0.001, decay: 0.1, release: 0.1 },
+        harmonicity: 5.1,
+        modulationIndex: 16,
+        resonance: 4000,
+        octaves: 1.5
+      }).toDestination(),
+      'Perc': new Tone.NoiseSynth({
+        noise: { type: 'brown' },
+        envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.4 }
+      }).toDestination()
+    };
 
-    R = parseInt(R * (100 + percent) / 100);
-    G = parseInt(G * (100 + percent) / 100);
-    B = parseInt(B * (100 + percent) / 100);
+    // Create string instruments
+    const strings = {
+      'Violin': new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.1, decay: 0.3, sustain: 0.4, release: 0.5 }
+      }).toDestination(),
+      'Cello': new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.1, decay: 0.5, sustain: 0.3, release: 0.8 }
+      }).toDestination(),
+      'Harp': new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.01, decay: 0.5, sustain: 0.3, release: 1 }
+      }).toDestination()
+    };
 
-    R = (R<255)?R:255;  
-    G = (G<255)?G:255;  
-    B = (B<255)?B:255;  
+    // Create brass instruments
+    const brass = {
+      'Trumpet': new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sawtooth' },
+        envelope: { attack: 0.05, decay: 0.3, sustain: 0.4, release: 0.2 }
+      }).toDestination(),
+      'Trombone': new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sawtooth' },
+        envelope: { attack: 0.1, decay: 0.4, sustain: 0.5, release: 0.3 }
+      }).toDestination()
+    };
 
-    R = Math.round(R);
-    G = Math.round(G);
-    B = Math.round(B);
+    // Create woodwind instruments
+    const woodwinds = {
+      'Flute': new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.1, decay: 0.3, sustain: 0.6, release: 0.5 }
+      }).toDestination(),
+      'Clarinet': new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sawtooth' },
+        envelope: { attack: 0.05, decay: 0.2, sustain: 0.4, release: 0.3 }
+      }).toDestination()
+    };
 
-    const RR = ((R.toString(16).length===1) ? "0"+R.toString(16):R.toString(16));
-    const GG = ((G.toString(16).length===1) ? "0"+G.toString(16):G.toString(16));
-    const BB = ((B.toString(16).length===1) ? "0"+B.toString(16):B.toString(16));
+    // Create synth instruments
+    const synths = {
+      'Pad': new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sine' },
+        envelope: { attack: 1, decay: 0.5, sustain: 1, release: 2 }
+      }).toDestination(),
+      'Lead': new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sawtooth' },
+        envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.2 }
+      }).toDestination()
+    };
 
-    return "#"+RR+GG+BB;
-  };
-
-  // Handle playing notes
-  const playNote = (note, octave, type = 'piano') => {
-    if (!instruments) return;
-    
-    const noteStr = `${note}${octave}`;
-    const noteId = `${note}${octave}-${type}`;
-    
-    setActiveNotes(prev => ({
-      ...prev,
-      [noteId]: true
-    }));
-    
-    try {
-      if (type === 'piano' && instruments.piano) {
-        instruments.piano.triggerAttack(noteStr);
-      } else if (type === 'strings' && instruments.strings && selectedInstrument) {
-        const synth = instruments.strings[selectedInstrument.name];
-        if (synth) synth.triggerAttack(noteStr);
-      } else if ((type === 'brass' || type === 'woodwinds') && instruments[type] && selectedInstrument) {
-        const synth = instruments[type][selectedInstrument.name];
-        if (synth) synth.triggerAttack(noteStr);
-      } else if (type === 'synth' && instruments.synths && selectedInstrument) {
-        const synth = instruments.synths[selectedInstrument.name];
-        if (synth) {
-          synth.set({
-            envelope: synthParams
-          });
-          synth.triggerAttack(noteStr);
-        }
+    // Create the main instruments object
+    const instruments = {
+      piano: new Tone.PolySynth(Tone.Synth).toDestination(),
+      drums: drumKit,
+      strings,
+      brass,
+      woodwinds,
+      synths,
+      setVolume: function(vol) {
+        Tone.Destination.volume.value = Tone.gainToDb(vol);
       }
-    } catch (error) {
-      console.error('Error playing note:', error);
-    }
+    };
+
+    return instruments;
   };
 
   // Handle playing sounds with proper cleanup
@@ -751,70 +565,10 @@ function MusicStudioContent() {
     return () => {}; // Return empty cleanup function by default
   };
 
-  // Handle stopping notes
-  const stopNote = (note, octave, type = 'piano') => {
-    if (!instruments) return;
-    
-    const noteStr = `${note}${octave}`;
-    const noteId = `${note}${octave}-${type}`;
-    
-    setActiveNotes(prev => {
-      const newNotes = {...prev};
-      delete newNotes[noteId];
-      return newNotes;
-    });
-    
-    try {
-      if (type === 'piano' && instruments.piano) {
-        instruments.piano.triggerRelease(noteStr);
-      } else if (type === 'strings' && instruments.strings && selectedInstrument) {
-        const synth = instruments.strings[selectedInstrument.name];
-        if (synth) synth.triggerRelease(noteStr);
-      } else if ((type === 'brass' || type === 'woodwinds') && instruments[type] && selectedInstrument) {
-        const synth = instruments[type][selectedInstrument.name];
-        if (synth) synth.triggerRelease(noteStr);
-      } else if (type === 'synth' && instruments.synths && selectedInstrument) {
-        const synth = instruments.synths[selectedInstrument.name];
-        if (synth) synth.triggerRelease(noteStr);
-      }
-    } catch (error) {
-      console.error('Error stopping note:', error);
-    }
-  };
-
-  // Handle drum pad hits with proper audio scheduling
-  const playDrum = (drumName) => {
-    if (!instruments?.drums?.[drumName]) {
-      console.warn(`Drum ${drumName} not found in instruments`);
-      return;
-    }
-    
-    try {
-      const now = Tone.context.currentTime;
-      const drum = instruments.drums[drumName];
-      
-      // Schedule the drum sound with proper timing
-      if (drumName === 'Kick' || drumName === 'Tom 1' || drumName === 'Tom 2') {
-        // For pitched drums (kick and toms)
-        drum.triggerAttackRelease('C1', '8n', now);
-      } else if (drumName === 'Snare' || drumName === 'Clap' || drumName === 'Perc') {
-        // For noise-based drums
-        drum.triggerAttack(now);
-        drum.triggerRelease(now + 0.2);
-      } else if (drumName === 'Hi-Hat' || drumName === 'Crash' || drumName === 'Rim') {
-        // For cymbals and metallic sounds
-        drum.triggerAttack(now);
-        drum.triggerRelease(now + 0.5);
-      }
-    } catch (error) {
-      console.error('Error playing drum:', error);
-    }
-  };
-
   // Handle volume changes
   const handleVolumeChange = (e) => {
     const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
+    setVolumeState(newVolume);
     Tone.Destination.volume.value = Tone.gainToDb(newVolume);
   };
 
@@ -904,7 +658,7 @@ function MusicStudioContent() {
             drumPadElement.classList.add('active-pad')
             setTimeout(() => drumPadElement.classList.remove('active-pad'), 100)
           }
-          playSound('drum', drumKeyMap[key])
+          playSound('drums', drumKeyMap[key])
         }
       } else if (activeTab === 'piano' && key in pianoKeyMap) {
         // Find the piano key element and trigger visual feedback
@@ -1123,15 +877,8 @@ function MusicStudioContent() {
 
   const renderPianoTab = () => {
     const playPianoKey = (key) => {
-      if (!instruments?.piano) return;
-      const note = `${key.note}${key.octave}`;
-      instruments.piano.triggerAttack(note);
-    };
-
-    const releasePianoKey = (key) => {
-      if (!instruments?.piano) return;
-      const note = `${key.note}${key.octave}`;
-      instruments.piano.triggerRelease(note);
+      const release = playSound('piano', key);
+      return release;
     };
 
     return (
@@ -1153,13 +900,16 @@ function MusicStudioContent() {
           <div className="piano-keys">
             {PIANO_KEYS.map((key, index) => {
               const isBlack = key.type === 'black';
+              let releaseFunction = () => {};
               return (
                 <div
                   key={index}
                   className={`piano-key ${key.type}-key`}
-                  onMouseDown={() => playPianoKey(key)}
-                  onMouseUp={() => releasePianoKey(key)}
-                  onMouseLeave={() => releasePianoKey(key)}
+                  onMouseDown={() => {
+                    releaseFunction = playPianoKey(key);
+                  }}
+                  onMouseUp={() => releaseFunction()}
+                  onMouseLeave={() => releaseFunction()}
                   title={`${key.note}${key.octave} - Click to play`}
                   style={{
                     left: isBlack ? undefined : 'auto',
@@ -1201,32 +951,6 @@ function MusicStudioContent() {
     return color; // Return as is if not a hex color
   };
 
-  // Handle keyboard events for drums
-  useEffect(() => {
-    if (!instruments || activeTab !== 'drums') return;
-    
-    const handleKeyDown = (e) => {
-      if (e.repeat) return; // Prevent key repeat
-      
-      const key = e.key.toUpperCase();
-      const drumPad = DRUM_PADS.find(pad => pad.key === key);
-      
-      if (drumPad) {
-        e.preventDefault();
-        playDrum(drumPad.name);
-        
-        // Visual feedback
-        const padElement = document.querySelector(`.drum-pad[title*="${drumPad.name}"]`);
-        if (padElement) {
-          padElement.classList.add('active-pad');
-          setTimeout(() => padElement.classList.remove('active-pad'), 100);
-        }
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [instruments, activeTab]);
 
   const renderDrumsTab = () => {
     return (
@@ -1257,7 +981,7 @@ function MusicStudioContent() {
               onMouseDown={(e) => {
                 e.preventDefault();
                 e.currentTarget.classList.add('active-pad');
-                playDrum(pad.name);
+                playSound('drums', pad.name);
               }}
               onMouseUp={(e) => {
                 e.currentTarget.classList.remove('active-pad');
@@ -1564,7 +1288,7 @@ function MusicStudioContent() {
             min="0"
             max="1"
             step="0.01"
-            value={volume}
+            value={volumeState}
             onChange={handleVolumeChange}
             className="volume-slider"
           />
