@@ -4,7 +4,8 @@ services:
     env: static
     buildCommand: |
       cd frontend && \
-      npm ci --no-audit --prefer-offline && \
+      npm install --legacy-peer-deps && \
+      npm install react-toastify --save && \
       npm run build
     staticPublishPath: "./frontend/dist"
     envVars:
