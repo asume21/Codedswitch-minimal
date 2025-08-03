@@ -1,0 +1,273 @@
+.lyric-analyzer {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+  backdrop-filter: blur(10px);
+}
+
+.analyzer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.analyzer-header h3 {
+  margin: 0;
+  color: #4ecdc4;
+  font-size: 1.3rem;
+}
+
+.loading-spinner {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  animation: pulse 1.5s infinite;
+}
+
+.error-message {
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  background: rgba(255, 107, 107, 0.1);
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+
+.analyzer-placeholder {
+  text-align: center;
+  padding: 2rem;
+  color: #888;
+}
+
+.analyzer-placeholder h3 {
+  color: #4ecdc4;
+  margin-bottom: 0.5rem;
+}
+
+.analysis-results {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.analysis-section {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.analysis-section h4 {
+  margin: 0 0 1rem 0;
+  color: #fff;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #4ecdc4;
+}
+
+.quality-score {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.score-circle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #ff6b6b 0%, #ff8e53 25%, #4ecdc4 50%, #45b7d1 75%, #4ecdc4 100%);
+  position: relative;
+}
+
+.score-circle::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.score-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  z-index: 1;
+}
+
+.score-label {
+  font-size: 0.7rem;
+  color: #888;
+  z-index: 1;
+}
+
+.score-description {
+  flex: 1;
+  color: #ccc;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.rhyme-scheme {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rhyme-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: #4ecdc4;
+  color: #000;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.rhyme-letter.no-rhyme {
+  background: rgba(255, 255, 255, 0.1);
+  color: #666;
+}
+
+.sentiment-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sentiment-score {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sentiment-label {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.sentiment-label.positive {
+  background: #4ecdc4;
+  color: #000;
+}
+
+.sentiment-label.negative {
+  background: #ff6b6b;
+  color: #fff;
+}
+
+.sentiment-label.neutral {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.sentiment-value {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.sentiment-breakdown {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.themes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.theme-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.theme-name {
+  color: #fff;
+  font-weight: 500;
+}
+
+.theme-count {
+  color: #4ecdc4;
+  font-size: 0.8rem;
+}
+
+.readability-level {
+  text-align: center;
+}
+
+.readability-label {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .quality-score {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .sentiment-breakdown {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}

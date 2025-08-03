@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './LyricLab.css';
+import LyricAnalyzer from './LyricAnalyzer';
 
 const LyricLab = ({ userPlan = 'free', onUsageUpdate }) => {
   const [selectedStyle, setSelectedStyle] = useState('boom-bap');
@@ -10,6 +11,8 @@ const LyricLab = ({ userPlan = 'free', onUsageUpdate }) => {
   const [userUsage, setUserUsage] = useState(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showAnalyzer, setShowAnalyzer] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState(null);
 
   const rapStyles = [
     { id: 'boom-bap', name: 'Boom Bap', description: 'Classic 90s hip-hop style' },
@@ -431,6 +434,12 @@ CodedSwitch, that's the coding rap`
             <div className="lyrics-header">
               <h3>Generated Lyrics ({rapStyles.find(s => s.id === selectedStyle)?.name})</h3>
               <div className="lyrics-actions">
+                <button 
+                  onClick={() => setShowAnalyzer(!showAnalyzer)} 
+                  className="action-btn"
+                >
+                  🔍 {showAnalyzer ? 'Hide' : 'Analyze'}
+                </button>
                 <button onClick={copyToClipboard} className="action-btn">
                   📋 Copy
                 </button>
@@ -442,6 +451,13 @@ CodedSwitch, that's the coding rap`
             <div className="lyrics-content">
               <pre>{generatedLyrics}</pre>
             </div>
+            
+            {showAnalyzer && (
+              <LyricAnalyzer 
+                lyrics={generatedLyrics}
+                onAnalysisComplete={(results) => setAnalysisResults(results)}
+              />
+            )}
           </div>
         )}
       </div>

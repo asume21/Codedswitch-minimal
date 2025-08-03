@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import PerformanceMonitor from './PerformanceMonitor';
 
 const Diagnostics = () => {
   const [backendStatus, setBackendStatus] = useState('Checking...');
   const [apiTests, setApiTests] = useState([]);
+  const [systemInfo, setSystemInfo] = useState({});
 
   useEffect(() => {
     const runDiagnostics = async () => {
@@ -40,6 +42,20 @@ const Diagnostics = () => {
           message: `Connection Error: ${error.message}`
         }]);
       }
+      
+      // Collect system information
+      setSystemInfo({
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        cookieEnabled: navigator.cookieEnabled,
+        onLine: navigator.onLine,
+        memoryInfo: performance.memory ? {
+          used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
+          total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
+          limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
+        } : null
+      });
     };
 
     runDiagnostics();
@@ -48,10 +64,14 @@ const Diagnostics = () => {
   return (
     <div className="diagnostics-container">
       <h2>System Diagnostics</h2>
+      
+      <PerformanceMonitor />
+      
       <div className="status-box">
         <h3>Backend Status</h3>
         <p>{backendStatus}</p>
       </div>
+      
       <div className="status-box">
         <h3>API Tests</h3>
         {apiTests.length > 0 ? (
@@ -66,12 +86,25 @@ const Diagnostics = () => {
           <p>Running API tests...</p>
         )}
       </div>
+      
       <div className="status-box">
         <h3>Environment</h3>
         <p>Backend URL: {import.meta.env.VITE_BACKEND_URL}</p>
         <p>AI URL: {import.meta.env.VITE_AI_URL}</p>
         <p>API URL: {import.meta.env.VITE_API_URL}</p>
       </div>
+      
+      <div className="status-box">
+        <h3>System Information</h3>
+        <p>Platform: {systemInfo.platform}</p>
+        <p>Language: {systemInfo.language}</p>
+        <p>Online: {systemInfo.onLine ? 'Yes' : 'No'}</p>
+        <p>Cookies: {systemInfo.cookieEnabled ? 'Enabled' : 'Disabled'}</p>
+        {systemInfo.memoryInfo && (
+          <p>Memory: {systemInfo.memoryInfo.used}MB / {systemInfo.memoryInfo.limit}MB</p>
+        )}
+      </div>
+      
       <style jsx>{`
         .diagnostics-container {
           max-width: 800px;

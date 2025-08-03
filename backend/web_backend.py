@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from api_keys import api_key_manager, require_api_key, create_god_key
 import stripe
 from dotenv import load_dotenv
+from lyric_analyzer import analyze_lyrics_text
 # Import Gemini service only if the API key is available
 try:
     from gemini_service import gemini_service, GEMINI_AVAILABLE
@@ -429,6 +430,55 @@ def handle_gemini_request(prompt, max_tokens, temperature=None):
         })
     except Exception as e:
         return jsonify({'error': str(e), 'provider': 'gemini'}), 500
+
+# Lyric analysis endpoint
+@app.route('/api/analyze-lyrics', methods=['POST', 'OPTIONS'])
+@cross_origin()
+@require_api_key('lyric_analysis')
+def analyze_lyrics():
+    """
+    Analyze lyrics for rhyme scheme, sentiment, themes, and quality.
+    
+    Request JSON:
+    - lyrics: The lyrics text to analyze (required)
+    
+    Returns:
+    - JSON with comprehensive lyric analysis
+    """
+    if request.method == 'OPTIONS':
+        return _build_cors_preflight_response()
+    
+    data = request.get_json()
+    if not data or 'lyrics' not in data:
+        return jsonify({
+            'success': False,
+            'error': 'Lyrics text is required'
+        }), 400
+    
+    try:
+        lyrics = data['lyrics']
+        if not lyrics.strip():
+            return jsonify({
+                'success': False,
+                'error': 'Lyrics cannot be empty'
+            }), 400
+        
+        # Perform analysis
+        analysis_result = analyze_lyrics_text(lyrics)
+        
+        return jsonify({
+            'success': True,
+            'analysis': analysis_result,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        logging.error(f"Error in analyze_lyrics: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': 'An error occurred while analyzing lyrics',
+            'details': str(e) if app.config.get('DEBUG') else None
+        }), 500
 
 # Add other endpoints here...
 

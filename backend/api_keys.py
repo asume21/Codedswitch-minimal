@@ -29,6 +29,7 @@ class APIKeyManager:
                         "code_translations": 10,
                         "vulnerability_scans": 3,
                         "codebeat_generations": 2,
+                        "lyric_analysis": 10,
                         "reset_period_days": 30
                     },
                     "pro": {
@@ -37,6 +38,7 @@ class APIKeyManager:
                         "code_translations": 500,
                         "vulnerability_scans": 50,
                         "codebeat_generations": 25,
+                        "lyric_analysis": 100,
                         "reset_period_days": 30
                     },
                     "premium": {
@@ -45,6 +47,7 @@ class APIKeyManager:
                         "code_translations": -1,
                         "vulnerability_scans": -1,
                         "codebeat_generations": -1,
+                        "lyric_analysis": -1,
                         "reset_period_days": 30
                     },
                     "god": {
@@ -53,6 +56,7 @@ class APIKeyManager:
                         "code_translations": -1,
                         "vulnerability_scans": -1,
                         "codebeat_generations": -1,
+                        "lyric_analysis": -1,
                         "reset_period_days": -1,  # Never resets
                         "admin_access": True,
                         "bypass_all_limits": True
@@ -88,6 +92,7 @@ class APIKeyManager:
             "code_translations": 0,
             "vulnerability_scans": 0,
             "codebeat_generations": 0,
+            "lyric_analysis": 0,
             "last_reset": datetime.now().isoformat()
         }
         
@@ -209,7 +214,7 @@ class APIKeyManager:
         
         # Add usage and limits for each feature
         features = ["lyric_generations", "music_generations", "code_translations", 
-                   "vulnerability_scans", "codebeat_generations"]
+                   "vulnerability_scans", "codebeat_generations", "lyric_analysis"]
         
         for feature in features:
             stats["usage"][feature] = usage.get(feature, 0)

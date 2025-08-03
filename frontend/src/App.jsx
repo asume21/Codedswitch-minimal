@@ -26,6 +26,7 @@ const AdminPanel = React.lazy(() => import('./components/AdminPanel'))
 const SpessaSynthEmbed = React.lazy(() => import('./components/SpessaSynthEmbed'));
 const LandingPage = React.lazy(() => import('./components/LandingPage'));
 const GeminiAITools = React.lazy(() => import('./components/GeminiAITools'));
+const CollaborationHub = React.lazy(() => import('./components/CollaborationHub'));
 
 function AppContent() {
   const [pricingPlans, setPricingPlans] = useState([]);
@@ -243,6 +244,12 @@ function AppContent() {
             >
               Diagnostics
             </button>
+            <button
+              className={`nav-link ${isActive('/collaborate') ? 'active' : ''}`}
+              onClick={() => navigate('/collaborate')}
+            >
+              Collaborate
+            </button>
             <div className="nav-settings">
               <SettingsDropdown />
             </div>
@@ -314,6 +321,11 @@ function AppContent() {
           <Route path="/spessasynth" element={<SpessaSynthEmbed />} />
           <Route path="/success" element={<Success />} />
           <Route path="/diagnostics" element={<Diagnostics />} />
+          <Route path="/collaborate" element={
+            <Suspense fallback={<div>Loading Collaboration Hub...</div>}>
+              <CollaborationHub />
+            </Suspense>
+          } />
         </Routes>
       </main>
 
